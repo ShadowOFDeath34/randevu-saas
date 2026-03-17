@@ -1,75 +1,82 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
+import { useCustomers, useCreateCustomer } from '@/hooks/use-customers'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Button } from '@/components/ui/button'
 
-interface Customer {
+interface CustomerView {
   id: string
+  name: string
   fullName: string
   phone: string
   email: string | null
   notes: string | null
   createdAt: string
-  _count: { bookings: number }
+  _count?: { bookings: number }
 }
 
 export default function CustomersPage() {
-  const [customers, setCustomers] = useState<Customer[]>([])
-  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [formData, setFormData] = useState({ fullName: '', phone: '', email: '', notes: '' })
 
-  useEffect(() => {
-    fetchCustomers()
-  }, [])
+  const { data, isLoading, error } = useCustomers({ search })
+  const createMutation = useCreateCustomer()
 
-  const fetchCustomers = async () => {
-    try {
-      const res = await fetch('/api/customers')
-      const data = await res.json()
-      setCustomers(data)
-    } catch (error) {
-      console.error('Error fetching customers:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const customers = (data?.customers || []) as unknown as CustomerView[]
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    try {
-      const res = await fetch('/api/customers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      })
-      if (res.ok) {
-        fetchCustomers()
-        setShowModal(false)
-        setFormData({ fullName: '', phone: '', email: '', notes: '' })
+    createMutation.mutate(
+      {
+        name: formData.fullName,
+        phone: formData.phone,
+        email: formData.email || undefined,
+        notes: formData.notes || undefined,
+      },
+      {
+        onSuccess: () => {
+          setShowModal(false)
+          setFormData({ fullName: '', phone: '', email: '', notes: '' })
+        },
       }
-    } catch (error) {
-      console.error('Error creating customer:', error)
-    }
+    )
   }
 
-  const filteredCustomers = customers.filter(c => 
-    c.fullName.toLowerCase().includes(search.toLowerCase()) ||
-    c.phone.includes(search)
-  )
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <Skeleton className="h-8 w-32" />
+          <Skeleton className="h-10 w-36" />
+        </div>
+        <Skeleton className="h-10 w-full max-w-md" />
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <Skeleton className="h-12 w-full" />
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-16 w-full" />
+          ))}
+        </div>
+      </div>
+    )
+  }
 
-  if (loading) return <div className="text-center py-10">Yükleniyor...</div>
+  if (error) {
+    return (
+      <div className="text-center py-10 text-red-600">
+        Müşteriler yüklenirken hata oluştu. Lütfen sayfayı yenileyin.
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-900">Müşteriler</h1>
-        <button
-          onClick={() => setShowModal(true)}
-          className="bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-indigo-700"
-        >
+        <Button onClick={() => setShowModal(true)}>
           + Yeni Müşteri
-        </button>
+        </Button>
       </div>
 
       <input
@@ -92,19 +99,19 @@ export default function CustomersPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {filteredCustomers.length === 0 ? (
+            {customers.length === 0 ? (
               <tr>
                 <td colSpan={5} className="px-6 py-10 text-center text-gray-500">
                   Müşteri bulunamadı
                 </td>
               </tr>
             ) : (
-              filteredCustomers.map((customer) => (
+              customers.map((customer) => (
                 <tr key={customer.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 text-sm font-medium text-gray-900">{customer.fullName}</td>
                   <td className="px-6 py-4 text-sm text-gray-500">{customer.phone}</td>
                   <td className="px-6 py-4 text-sm text-gray-500">{customer.email || '-'}</td>
-                  <td className="px-6 py-4 text-sm text-gray-500">{customer._count.bookings}</td>
+                  <td className="px-6 py-4 text-sm text-gray-500">{customer._count?.bookings || 0}</td>
                   <td className="px-6 py-4 text-sm text-gray-500">
                     {new Date(customer.createdAt).toLocaleDateString('tr-TR')}
                   </td>
@@ -162,8 +169,12 @@ export default function CustomersPage() {
                 <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 border border-gray-300 rounded-lg">
                   İptal
                 </button>
-                <button type="submit" className="px-4 py-2 bg-indigo-600 text-white rounded-lg">
-                  Ekle
+                <button
+                  type="submit"
+                  disabled={createMutation.isPending}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg disabled:opacity-50"
+                >
+                  {createMutation.isPending ? 'Ekleniyor...' : 'Ekle'}
                 </button>
               </div>
             </form>

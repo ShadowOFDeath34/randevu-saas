@@ -1,8 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
+import { useStaff, useCreateStaff, useUpdateStaff, useDeleteStaff } from '@/hooks/use-staff'
+import { useServices } from '@/hooks/use-services'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Button } from '@/components/ui/button'
 
-interface Staff {
+interface StaffView {
   id: string
   fullName: string
   title: string | null
@@ -14,11 +18,8 @@ interface Staff {
 }
 
 export default function StaffPage() {
-  const [staff, setStaff] = useState<Staff[]>([])
-  const [services, setServices] = useState<{id: string, name: string}[]>([])
-  const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
-  const [editingStaff, setEditingStaff] = useState<Staff | null>(null)
+  const [editingStaff, setEditingStaff] = useState<StaffView | null>(null)
   const [formData, setFormData] = useState({
     fullName: '',
     title: '',
@@ -29,63 +30,39 @@ export default function StaffPage() {
     serviceIds: [] as string[]
   })
 
-  useEffect(() => {
-    fetchData()
-  }, [])
+  const { data: staff = [], isLoading: isStaffLoading, error: staffError } = useStaff()
+  const { data: services = [], isLoading: isServicesLoading } = useServices()
+  const createMutation = useCreateStaff()
+  const updateMutation = useUpdateStaff()
+  const deleteMutation = useDeleteStaff()
 
-  const fetchData = async () => {
-    try {
-      const [staffRes, servicesRes] = await Promise.all([
-        fetch('/api/staff'),
-        fetch('/api/services')
-      ])
-      const staffData = await staffRes.json()
-      const servicesData = await servicesRes.json()
-      setStaff(staffData)
-      setServices(servicesData)
-    } catch (error) {
-      console.error('Error fetching data:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const isLoading = isStaffLoading || isServicesLoading
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    const url = editingStaff ? `/api/staff/${editingStaff.id}` : '/api/staff'
-    const method = editingStaff ? 'PUT' : 'POST'
+    const data = {
+      name: formData.fullName,
+      email: formData.email || undefined,
+      phone: formData.phone || undefined,
+    }
 
-    try {
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      })
-
-      if (res.ok) {
-        fetchData()
-        closeModal()
-      }
-    } catch (error) {
-      console.error('Error saving staff:', error)
+    if (editingStaff) {
+      updateMutation.mutate(
+        { id: editingStaff.id, data },
+        { onSuccess: () => closeModal() }
+      )
+    } else {
+      createMutation.mutate(data, { onSuccess: () => closeModal() })
     }
   }
 
   const handleDelete = async (id: string) => {
     if (!confirm('Bu personeli silmek istediğinize emin misiniz?')) return
-
-    try {
-      const res = await fetch(`/api/staff/${id}`, { method: 'DELETE' })
-      if (res.ok) {
-        fetchData()
-      }
-    } catch (error) {
-      console.error('Error deleting staff:', error)
-    }
+    deleteMutation.mutate(id)
   }
 
-  const openModal = (member?: Staff) => {
+  const openModal = (member?: StaffView) => {
     if (member) {
       setEditingStaff(member)
       setFormData({
@@ -109,27 +86,46 @@ export default function StaffPage() {
     setEditingStaff(null)
   }
 
-  if (loading) return <div className="text-center py-10">Yükleniyor...</div>
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <Skeleton className="h-8 w-32" />
+          <Skeleton className="h-10 w-36" />
+        </div>
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-32 rounded-xl" />
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (staffError) {
+    return (
+      <div className="text-center py-10 text-red-600">
+        Personeller yüklenirken hata oluştu. Lütfen sayfayı yenileyin.
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-900">Personel</h1>
-        <button
-          onClick={() => openModal()}
-          className="bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-indigo-700"
-        >
+        <Button onClick={() => openModal()}>
           + Yeni Personel
-        </button>
+        </Button>
       </div>
 
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {staff.length === 0 ? (
+        {(staff as unknown as StaffView[]).length === 0 ? (
           <div className="col-span-full text-center py-10 text-gray-500">
             Henüz personel eklenmemiş
           </div>
         ) : (
-          staff.map((member) => (
+          (staff as unknown as StaffView[]).map((member) => (
             <div key={member.id} className="bg-white rounded-xl border border-gray-200 p-4">
               <div className="flex items-start justify-between">
                 <div>
@@ -151,7 +147,8 @@ export default function StaffPage() {
                 </button>
                 <button
                   onClick={() => handleDelete(member.id)}
-                  className="text-sm text-red-600 hover:text-red-900"
+                  disabled={deleteMutation.isPending}
+                  className="text-sm text-red-600 hover:text-red-900 disabled:opacity-50"
                 >
                   Sil
                 </button>
@@ -253,7 +250,11 @@ export default function StaffPage() {
                 <button type="button" onClick={closeModal} className="px-4 py-2 border border-gray-300 rounded-lg">
                   İptal
                 </button>
-                <button type="submit" className="px-4 py-2 bg-indigo-600 text-white rounded-lg">
+                <button
+                  type="submit"
+                  disabled={createMutation.isPending || updateMutation.isPending}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg disabled:opacity-50"
+                >
                   {editingStaff ? 'Güncelle' : 'Ekle'}
                 </button>
               </div>

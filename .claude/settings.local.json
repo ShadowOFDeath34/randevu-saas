@@ -27,7 +27,8 @@
       "Bash(git push:*)",
       "mcp__plugin_playwright_playwright__browser_close",
       "Bash(git add:*)",
-      "Bash(git commit -m \"feat: React Query entegrasyonu:*)"
+      "Bash(git commit -m \"feat: React Query entegrasyonu:*)",
+      "Bash(git commit -m \"feat: Dashboard sayfaları React Query''ye çevrildi:*)"
     ]
   }
 }

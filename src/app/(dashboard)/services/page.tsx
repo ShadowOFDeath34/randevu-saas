@@ -1,9 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState } from 'react'
+import { useServices, useCreateService, useUpdateService, useDeleteService } from '@/hooks/use-services'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Button } from '@/components/ui/button'
 
-interface Service {
+interface ServiceView {
   id: string
   name: string
   description: string | null
@@ -14,11 +16,8 @@ interface Service {
 }
 
 export default function ServicesPage() {
-  const router = useRouter()
-  const [services, setServices] = useState<Service[]>([])
-  const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
-  const [editingService, setEditingService] = useState<Service | null>(null)
+  const [editingService, setEditingService] = useState<ServiceView | null>(null)
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -26,61 +25,37 @@ export default function ServicesPage() {
     price: ''
   })
 
-  useEffect(() => {
-    fetchServices()
-  }, [])
-
-  const fetchServices = async () => {
-    try {
-      const res = await fetch('/api/services')
-      const data = await res.json()
-      setServices(data)
-    } catch (error) {
-      console.error('Error fetching services:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const { data: services = [], isLoading, error } = useServices()
+  const createMutation = useCreateService()
+  const updateMutation = useUpdateService()
+  const deleteMutation = useDeleteService()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    const url = editingService ? `/api/services/${editingService.id}` : '/api/services'
-    const method = editingService ? 'PUT' : 'POST'
 
-    try {
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          price: formData.price ? parseFloat(formData.price) : null
-        })
-      })
+    const data = {
+      name: formData.name,
+      description: formData.description,
+      duration: formData.durationMinutes,
+      price: formData.price ? parseFloat(formData.price) : 0,
+    }
 
-      if (res.ok) {
-        fetchServices()
-        closeModal()
-      }
-    } catch (error) {
-      console.error('Error saving service:', error)
+    if (editingService) {
+      updateMutation.mutate(
+        { id: editingService.id, data },
+        { onSuccess: () => closeModal() }
+      )
+    } else {
+      createMutation.mutate(data, { onSuccess: () => closeModal() })
     }
   }
 
   const handleDelete = async (id: string) => {
     if (!confirm('Bu hizmeti silmek istediğinize emin misiniz?')) return
-
-    try {
-      const res = await fetch(`/api/services/${id}`, { method: 'DELETE' })
-      if (res.ok) {
-        fetchServices()
-      }
-    } catch (error) {
-      console.error('Error deleting service:', error)
-    }
+    deleteMutation.mutate(id)
   }
 
-  const openModal = (service?: Service) => {
+  const openModal = (service?: ServiceView) => {
     if (service) {
       setEditingService(service)
       setFormData({
@@ -101,20 +76,38 @@ export default function ServicesPage() {
     setEditingService(null)
   }
 
-  if (loading) {
-    return <div className="text-center py-10">Yükleniyor...</div>
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <Skeleton className="h-8 w-32" />
+          <Skeleton className="h-10 w-36" />
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <Skeleton className="h-12 w-full" />
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-16 w-full" />
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-10 text-red-600">
+        Hizmetler yüklenirken hata oluştu. Lütfen sayfayı yenileyin.
+      </div>
+    )
   }
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-900">Hizmetler</h1>
-        <button
-          onClick={() => openModal()}
-          className="bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-indigo-700 transition-colors"
-        >
+        <Button onClick={() => openModal()}>
           + Yeni Hizmet
-        </button>
+        </Button>
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -139,14 +132,14 @@ export default function ServicesPage() {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {services.length === 0 ? (
+            {(services as unknown as ServiceView[]).length === 0 ? (
               <tr>
                 <td colSpan={5} className="px-6 py-10 text-center text-gray-500">
                   Henüz hizmet eklenmemiş
                 </td>
               </tr>
             ) : (
-              services.map((service) => (
+              (services as unknown as ServiceView[]).map((service) => (
                 <tr key={service.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div>
@@ -178,7 +171,8 @@ export default function ServicesPage() {
                     </button>
                     <button
                       onClick={() => handleDelete(service.id)}
-                      className="text-red-600 hover:text-red-900"
+                      disabled={deleteMutation.isPending}
+                      className="text-red-600 hover:text-red-900 disabled:opacity-50"
                     >
                       Sil
                     </button>
@@ -190,7 +184,6 @@ export default function ServicesPage() {
         </table>
       </div>
 
-      {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
@@ -254,7 +247,8 @@ export default function ServicesPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                  disabled={createMutation.isPending || updateMutation.isPending}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
                 >
                   {editingService ? 'Güncelle' : 'Ekle'}
                 </button>
