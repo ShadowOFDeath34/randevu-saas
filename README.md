@@ -1,36 +1,211 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# RandevuAI - Akıllı Randevu Yönetim Platformu
 
-## Getting Started
+<p align="center">
+  <img src="https://img.shields.io/badge/Version-1.0.0-blue" alt="Version">
+  <img src="https://img.shields.io/badge/License-Commercial-red" alt="License">
+  <img src="https://img.shields.io/badge/Next.js-16-black" alt="Next.js">
+  <img src="https://img.shields.io/badge/TypeScript-5-blue" alt="TypeScript">
+  <img src="https://img.shields.io/badge/Prisma-SQLite-green" alt="Prisma">
+</p>
 
-First, run the development server:
+## 📋 Hakkında
+
+RandevuAI, küçük ve orta ölçekli hizmet işletmeleri için geliştirilmiş modern, tam özellikli bir randevu, müşteri takibi ve yönetim SaaS platformudur.
+
+### Hedef Sektörler
+
+- Berber & Kuaför
+- Güzellik Salonu & Cilt Bakım
+- Diş Kliniği
+- Psikolog & Danışman
+- Özel Ders & Eğitim
+- Tamir & Servis
+- ve daha fazlası...
+
+---
+
+## 🚀 Özellikler
+
+### Çekirdek Özellikler
+
+- Online Randevu Sistemi - 7/24 müşteri randevusu
+- Akıllı Slot Hesaplama - Çakışma kontrolü ile otomatik
+- Çoklu Personel - Her personel için ayrı takvim
+- Hizmet Yönetimi - Süre, fiyat, açıklama
+- Müşteri Veritabanı - Tüm müşteri bilgileri
+- Çalışma Saatleri - Gün bazlı özelleştirilebilir
+
+### Panel Özellikleri
+
+- Dashboard - Anlık istatistikler
+- Takvim - Haftalık/günlük görünüm
+- Analytics - Gelir, doluluk, performans
+- Müşteri Yönetimi - Arama, notlar, geçmiş
+- Ayarlar - Profil, saatler, bildirimler
+
+### Ödeme & Abonelik
+
+- iyzico Entegrasyonu - Türk bankaları
+- Abonelik Planları - Başlangıç, Standart, Premium
+- Fatura Yönetimi - Otomatik fatura
+
+### Bildirim Sistemleri
+
+- E-posta - Resend ile
+- SMS - NetGSM ile
+- WhatsApp - Twilio ile
+- Otomatik Hatırlatmalar - Cron job
+
+### Yapay Zeka
+
+- AI Chatbot - 7/24 müşteri desteği
+- Akıllı Yanıtlar - Doğal dil işleme
+- Otomatik Öneriler - Hizmet ve zaman önerileri
+
+### SEO & Pazarlama
+
+- Meta Etiketleri - Arama motoru optimizasyonu
+- PWA Desteği - Mobil uygulama deneyimi
+- Yorum Sistemi - Müşteri geri bildirimi
+- Open Graph - Sosyal medya paylaşımı
+
+### Yönetim
+
+- Super Admin Panel - Tüm tenantları yönet
+- Tenant Yönetimi - İşletme izleme
+- Rol Tabanlı Erişim - Owner, Staff, Admin
+- Audit Logları - Tüm işlemler kayıtlı
+
+---
+
+## 🛠️ Teknoloji Stack
+
+| Katman | Teknoloji |
+|--------|-----------|
+| Framework | Next.js 16 (App Router) |
+| Language | TypeScript |
+| Styling | Tailwind CSS |
+| Database | SQLite (Prisma) |
+| Auth | NextAuth v5 |
+| State | React Context |
+| Forms | React Hook Form + Zod |
+| Deployment | Vercel |
+
+---
+
+## 📦 Kurulum
+
+### Gereksinimler
+
+- Node.js 18+
+- npm veya yarn
+
+### Adımlar
 
 ```bash
+# 1. Projeyi klonla
+git clone https://github.com/your-repo/randevu-ai.git
+cd randevu-ai
+
+# 2. Bağımlılıkları yükle
+npm install
+
+# 3. Environment dosyası oluştur
+cp .env.example .env
+
+# 4. Database oluştur
+npx prisma db push
+
+# 5. Seed verileri yükle (opsiyonel)
+npm run db:seed
+
+# 6. Geliştirme sunucusu başlat
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Environment Değişkenleri
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```env
+DATABASE_URL="file:./dev.db"
+NEXTAUTH_SECRET="your-secret-key"
+NEXTAUTH_URL="http://localhost:3000"
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# iyzico (Ödeme)
+IYZIPAY_API_KEY=""
+IYZIPAY_SECRET_KEY=""
+IYZIPAY_BASE_URL="https://sandbox-api.iyzico.com"
 
-## Learn More
+# Resend (E-posta)
+RESEND_API_KEY=""
 
-To learn more about Next.js, take a look at the following resources:
+# NetGSM (SMS)
+NETGSM_API_KEY=""
+NETGSM_USER=""
+NETGSM_PASS=""
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# Twilio (WhatsApp)
+TWILIO_ACCOUNT_SID=""
+TWILIO_AUTH_TOKEN=""
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## 📁 Proje Yapısı
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```
+src/
+├── app/                    # Next.js App Router
+│   ├── (dashboard)/       # Dashboard pages
+│   │   ├── dashboard/     # Ana sayfa
+│   │   ├── calendar/      # Takvim
+│   │   ├── bookings/     # Randevular
+│   │   ├── services/      # Hizmetler
+│   │   ├── staff/        # Personel
+│   │   ├── customers/    # Müşteriler
+│   │   ├── settings/    # Ayarlar
+│   │   └── analytics/   # İstatistikler
+│   ├── api/              # API routes
+│   │   ├── auth/         # NextAuth
+│   │   ├── bookings/      # Randevu API
+│   │   ├── services/     # Hizmet API
+│   │   ├── staff/        # Personel API
+│   │   ├── customers/    # Müşteri API
+│   │   ├── admin/        # Admin API
+│   │   ├── ai/           # AI Chat API
+│   │   └── public/       # Public API
+│   ├── b/[slug]/         # Public booking page
+│   ├── admin/            # Super admin
+│   └── review/           # Yorum sayfası
+├── components/             # React bileşenler
+│   └── chat-widget.tsx   # AI Chat
+├── lib/                   # Kütüphaneler
+│   ├── db.ts             # Prisma client
+│   ├── auth.ts           # NextAuth config
+│   ├── utils.ts          # Yardımcı fonksiyonlar
+│   ├── validations.ts    # Zod şemaları
+│   ├── payment/          # Ödeme sistemi
+│   ├── notification/    # Bildirim sistemi
+│   ├── ai-chat.ts       # AI chat
+│   └── plans.ts         # Abonelik planları
+└── prisma/               # Database
+    ├── schema.prisma     # DB şeması
+    └── seed.ts          # Seed verileri
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## 📄 Lisans
+
+Bu proje ticari kullanım için lisanslıdır.
+
+---
+
+## 📞 İletişim
+
+- Website: randevuai.com
+- Email: info@randevuai.com
+
+---
+
+<p align="center">© 2026 RandevuAI - Tüm hakları saklıdır.</p>
