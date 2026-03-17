@@ -1,12 +1,13 @@
 import { auth, signOut } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { 
-  LayoutDashboard, 
-  Calendar, 
-  ClipboardList, 
-  Scissors, 
-  Users, 
+import { PageTransition } from '@/components/page-transition'
+import {
+  LayoutDashboard,
+  Calendar,
+  ClipboardList,
+  Scissors,
+  Users,
   UserCheck,
   Settings,
   LogOut,
@@ -18,9 +19,9 @@ import {
   Bell,
   Palette,
   ExternalLink,
-  Briefcase, // Added
-  CreditCard, // Added
-  Sparkles // Added
+  Briefcase,
+  CreditCard,
+  Sparkles
 } from 'lucide-react'
 import { db } from '@/lib/db'
 
@@ -154,7 +155,9 @@ export default async function DashboardLayout({
 
         {/* ── Main Content ── */}
         <main className="flex-1 md:ml-64 p-4 sm:p-6 lg:p-8">
-          {children}
+          <PageTransition>
+            {children}
+          </PageTransition>
         </main>
       </div>
     </div>
