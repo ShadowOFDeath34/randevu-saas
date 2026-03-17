@@ -51,7 +51,9 @@
       "mcp__plugin_playwright_playwright__browser_snapshot",
       "mcp__plugin_playwright_playwright__browser_fill_form",
       "WebFetch(domain:resend.com)",
-      "WebFetch(domain:sandbox.iyzico.com)"
+      "WebFetch(domain:sandbox.iyzico.com)",
+      "Bash(git commit:*)",
+      "mcp__plugin_serena_serena__search_for_pattern"
     ]
   }
 }

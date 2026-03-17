@@ -22,6 +22,7 @@ export function useStaff() {
   return useQuery({
     queryKey: ["staff"],
     queryFn: fetchStaff,
+    staleTime: 5 * 60 * 1000, // 5 minutes - staff rarely change
   });
 }
 

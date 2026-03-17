@@ -22,6 +22,7 @@ export function useServices() {
   return useQuery({
     queryKey: ["services"],
     queryFn: fetchServices,
+    staleTime: 5 * 60 * 1000, // 5 minutes - services rarely change
   });
 }
 

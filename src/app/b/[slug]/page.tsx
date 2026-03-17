@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import BookingForm from './booking-form'
 import { MapPin, Phone, Clock } from 'lucide-react'
 import { Suspense } from 'react'
+import Image from 'next/image'
 
 // Chat widget'i lazy load ile yükle - performans için
 // Not: Client Component olarak işaretlendiği için ssr: false gerekmez
@@ -54,7 +55,7 @@ export default async function PublicBookingPage({ params }: Props) {
       <header className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary-950 via-primary-900 to-primary-800" />
         <div className="absolute inset-0 bg-dot-pattern opacity-[0.06]" />
-        
+
         {/* Floating Orbs */}
         <div className="absolute -top-20 -right-20 w-64 h-64 bg-primary-500/15 rounded-full blur-3xl" />
         <div className="absolute -bottom-16 -left-16 w-48 h-48 bg-primary-400/10 rounded-full blur-3xl" />
@@ -62,10 +63,13 @@ export default async function PublicBookingPage({ params }: Props) {
         <div className="relative z-10 max-w-3xl mx-auto px-4 py-8 sm:py-12">
           <div className="flex items-center gap-4 sm:gap-5">
             {profile.logoUrl ? (
-              <img 
-                src={profile.logoUrl} 
-                alt={profile.businessName} 
-                className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl object-cover ring-2 ring-white/20 shadow-lg" 
+              <Image
+                src={profile.logoUrl}
+                alt={profile.businessName}
+                width={64}
+                height={64}
+                className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl object-cover ring-2 ring-white/20 shadow-lg"
+                priority
               />
             ) : (
               <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/15 backdrop-blur-sm flex items-center justify-center ring-2 ring-white/20">
@@ -102,7 +106,7 @@ export default async function PublicBookingPage({ params }: Props) {
             <Clock className="w-5 h-5 text-primary-600" />
             <h2 className="text-lg font-semibold text-neutral-900">Online Randevu Al</h2>
           </div>
-          <BookingForm 
+          <BookingForm
             tenant={tenant}
             services={tenant.services}
             staff={tenant.staff}

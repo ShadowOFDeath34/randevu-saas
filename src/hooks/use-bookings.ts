@@ -19,14 +19,28 @@ interface BookingsParams {
   endDate?: string;
   status?: BookingStatus;
   staffId?: string;
+  page?: number;
+  limit?: number;
 }
 
-const fetchBookings = async (params?: BookingsParams): Promise<Booking[]> => {
+interface BookingsResponse {
+  data: Booking[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+const fetchBookings = async (params?: BookingsParams): Promise<BookingsResponse> => {
   const searchParams = new URLSearchParams();
   if (params?.startDate) searchParams.set("startDate", params.startDate);
   if (params?.endDate) searchParams.set("endDate", params.endDate);
   if (params?.status) searchParams.set("status", params.status);
   if (params?.staffId) searchParams.set("staffId", params.staffId);
+  if (params?.page) searchParams.set("page", params.page.toString());
+  if (params?.limit) searchParams.set("limit", params.limit.toString());
 
   const response = await fetch(`/api/bookings?${searchParams.toString()}`);
   if (!response.ok) {
@@ -47,6 +61,7 @@ export function useBookings(params?: BookingsParams) {
   return useQuery({
     queryKey: ["bookings", params],
     queryFn: () => fetchBookings(params),
+    staleTime: 30 * 1000, // 30 seconds - bookings change frequently
   });
 }
 
@@ -55,6 +70,7 @@ export function useBooking(id: string) {
     queryKey: ["booking", id],
     queryFn: () => fetchBookingById(id),
     enabled: !!id,
+    staleTime: 60 * 1000, // 1 minute
   });
 }
 

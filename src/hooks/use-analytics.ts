@@ -68,6 +68,7 @@ export function useDashboardStats() {
   return useQuery({
     queryKey: ["analytics", "dashboard"],
     queryFn: fetchDashboardStats,
+    staleTime: 2 * 60 * 1000, // 2 minutes - dashboard stats update frequently
     refetchInterval: 5 * 60 * 1000, // 5 dakikada bir yenile
   });
 }
@@ -76,6 +77,7 @@ export function useRevenueData(period: string = "7d") {
   return useQuery({
     queryKey: ["analytics", "revenue", period],
     queryFn: () => fetchRevenueData(period),
+    staleTime: 2 * 60 * 1000, // 2 minutes
   });
 }
 
@@ -83,6 +85,7 @@ export function useServicePopularity() {
   return useQuery({
     queryKey: ["analytics", "services"],
     queryFn: fetchServicePopularity,
+    staleTime: 2 * 60 * 1000, // 2 minutes
   });
 }
 
@@ -90,6 +93,7 @@ export function useStaffPerformance() {
   return useQuery({
     queryKey: ["analytics", "staff"],
     queryFn: fetchStaffPerformance,
+    staleTime: 2 * 60 * 1000, // 2 minutes
   });
 }
 
@@ -120,5 +124,6 @@ export function useAnalyticsStats(period: string) {
   return useQuery({
     queryKey: ["analytics", "stats", period],
     queryFn: () => fetchAnalyticsStats(period),
+    staleTime: 2 * 60 * 1000, // 2 minutes
   });
 }

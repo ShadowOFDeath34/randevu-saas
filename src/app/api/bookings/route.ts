@@ -13,6 +13,13 @@ export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url)
     const filter = searchParams.get('filter') || 'all'
+    const page = parseInt(searchParams.get('page') || '1', 10)
+    const limit = parseInt(searchParams.get('limit') || '20', 10)
+
+    // Validate pagination params
+    const validatedPage = Math.max(1, page)
+    const validatedLimit = Math.min(100, Math.max(1, limit)) // Max 100 items per page
+    const skip = (validatedPage - 1) * validatedLimit
 
     const where: any = { tenantId: session.user.tenantId }
 
@@ -20,17 +27,59 @@ export async function GET(req: Request) {
       where.status = filter
     }
 
-    const bookings = await db.booking.findMany({
-      where,
-      include: {
-        service: true,
-        customer: true,
-        staff: true
-      },
-      orderBy: [{ bookingDate: 'desc' }, { startTime: 'desc' }]
-    })
+    // Run count and fetch in parallel for better performance
+    const [bookings, totalCount] = await Promise.all([
+      db.booking.findMany({
+        where,
+        select: {
+          id: true,
+          bookingDate: true,
+          startTime: true,
+          endTime: true,
+          status: true,
+          notes: true,
+          confirmationCode: true,
+          createdAt: true,
+          customer: {
+            select: {
+              id: true,
+              fullName: true,
+              phone: true,
+              email: true,
+            }
+          },
+          service: {
+            select: {
+              id: true,
+              name: true,
+              durationMinutes: true,
+              price: true,
+            }
+          },
+          staff: {
+            select: {
+              id: true,
+              fullName: true,
+              avatarUrl: true,
+            }
+          }
+        },
+        orderBy: [{ bookingDate: 'desc' }, { startTime: 'desc' }],
+        skip,
+        take: validatedLimit,
+      }),
+      db.booking.count({ where })
+    ])
 
-    return NextResponse.json(bookings)
+    return NextResponse.json({
+      data: bookings,
+      pagination: {
+        page: validatedPage,
+        limit: validatedLimit,
+        total: totalCount,
+        totalPages: Math.ceil(totalCount / validatedLimit),
+      }
+    })
   } catch (error) {
     console.error('Error fetching bookings:', error)
     return NextResponse.json({ error: 'Error fetching bookings' }, { status: 500 })
@@ -55,7 +104,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Service not found' }, { status: 404 })
     }
 
-    const staff = await db.staff.findFirst({
+    const staff = await db.service.findFirst({
       where: { id: staffId, tenantId: session.user.tenantId }
     })
 

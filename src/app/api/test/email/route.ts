@@ -3,6 +3,14 @@ import { sendEmail, sendBookingConfirmationEmail } from '@/lib/email'
 
 export async function POST(req: Request) {
   try {
+    // Block in production
+    if (process.env.NODE_ENV === 'production') {
+      return NextResponse.json(
+        { error: 'Test endpoint not available in production' },
+        { status: 403 }
+      )
+    }
+
     const { to, type = 'basic' } = await req.json()
 
     if (!to) {

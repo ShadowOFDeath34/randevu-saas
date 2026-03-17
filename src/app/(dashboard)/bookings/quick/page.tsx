@@ -32,7 +32,7 @@ export default function QuickBookingPage() {
   const { data: customersData, isLoading: customersLoading } = useCustomers()
   const createBooking = useCreateBooking()
 
-  const customers = customersData?.customers || []
+  const customers = customersData?.data || []
 
   const [success, setSuccess] = useState(false)
   const [existingCustomer, setExistingCustomer] = useState(true)

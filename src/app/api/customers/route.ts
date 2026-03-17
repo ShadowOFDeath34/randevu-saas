@@ -2,22 +2,68 @@ import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const session = await auth()
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const customers = await db.customer.findMany({
-      where: { tenantId: session.user.tenantId },
-      include: {
-        _count: { select: { bookings: true } }
-      },
-      orderBy: { createdAt: 'desc' }
-    })
+    const { searchParams } = new URL(req.url)
+    const page = parseInt(searchParams.get('page') || '1', 10)
+    const limit = parseInt(searchParams.get('limit') || '20', 10)
+    const search = searchParams.get('search') || ''
 
-    return NextResponse.json(customers)
+    // Validate pagination params
+    const validatedPage = Math.max(1, page)
+    const validatedLimit = Math.min(100, Math.max(1, limit)) // Max 100 items per page
+    const skip = (validatedPage - 1) * validatedLimit
+
+    // Build where clause with optional search
+    const where: any = { tenantId: session.user.tenantId }
+
+    if (search) {
+      where.OR = [
+        { fullName: { contains: search, mode: 'insensitive' } },
+        { phone: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+      ]
+    }
+
+    // Run count and fetch in parallel for better performance
+    const [customers, totalCount] = await Promise.all([
+      db.customer.findMany({
+        where,
+        select: {
+          id: true,
+          fullName: true,
+          phone: true,
+          email: true,
+          notes: true,
+          noShowCount: true,
+          totalBookings: true,
+          lastVisitDate: true,
+          customerSegment: true,
+          createdAt: true,
+          updatedAt: true,
+          _count: { select: { bookings: true } }
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: validatedLimit,
+      }),
+      db.customer.count({ where })
+    ])
+
+    return NextResponse.json({
+      data: customers,
+      pagination: {
+        page: validatedPage,
+        limit: validatedLimit,
+        total: totalCount,
+        totalPages: Math.ceil(totalCount / validatedLimit),
+      }
+    })
   } catch (error) {
     console.error('Error fetching customers:', error)
     return NextResponse.json({ error: 'Error fetching customers' }, { status: 500 })

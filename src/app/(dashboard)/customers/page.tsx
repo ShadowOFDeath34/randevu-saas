@@ -24,7 +24,7 @@ export default function CustomersPage() {
   const { data, isLoading, error } = useCustomers({ search })
   const createMutation = useCreateCustomer()
 
-  const customers = (data?.customers || []) as unknown as CustomerView[]
+  const customers = (data?.data || []) as unknown as CustomerView[]
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

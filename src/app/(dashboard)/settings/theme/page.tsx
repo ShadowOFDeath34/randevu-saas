@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Save, Upload, Palette } from 'lucide-react'
 import { useThemeSettings, useUpdateThemeSettings } from '@/hooks/use-settings'
 import { Skeleton } from '@/components/ui/skeleton'
+import Image from 'next/image'
 
 interface ThemeSettings {
   primaryColor: string
@@ -97,9 +98,15 @@ export default function ThemeSettingsPage() {
         </h2>
 
         <div className="flex items-center gap-6">
-          <div className="w-24 h-24 rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden bg-gray-50">
+          <div className="w-24 h-24 rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden bg-gray-50 relative">
             {localSettings.logoUrl ? (
-              <img src={localSettings.logoUrl} alt="Logo" className="w-full h-full object-cover" />
+              <Image
+                src={localSettings.logoUrl}
+                alt="Logo"
+                fill
+                className="object-cover"
+                sizes="96px"
+              />
             ) : (
               <Palette className="w-8 h-8 text-gray-400" />
             )}

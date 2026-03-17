@@ -60,7 +60,7 @@ export async function GET() {
   } else {
     checks.checks.environment = {
       status: 'unhealthy',
-      error: `Missing env vars: ${missingEnvVars.join(', ')}`
+      error: 'Missing required environment variables'
     }
     allHealthy = false
   }

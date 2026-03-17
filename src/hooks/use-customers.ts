@@ -18,10 +18,13 @@ interface CustomersParams {
 }
 
 interface CustomersResponse {
-  customers: Customer[];
-  total: number;
-  page: number;
-  totalPages: number;
+  data: Customer[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
 }
 
 const fetchCustomers = async (
@@ -51,6 +54,7 @@ export function useCustomers(params?: CustomersParams) {
   return useQuery({
     queryKey: ["customers", params],
     queryFn: () => fetchCustomers(params),
+    staleTime: 60 * 1000, // 1 minute - customers change occasionally
   });
 }
 
@@ -59,6 +63,7 @@ export function useCustomer(id: string) {
     queryKey: ["customer", id],
     queryFn: () => fetchCustomerById(id),
     enabled: !!id,
+    staleTime: 2 * 60 * 1000, // 2 minutes
   });
 }
 
