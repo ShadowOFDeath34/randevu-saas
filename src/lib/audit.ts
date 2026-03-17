@@ -29,7 +29,7 @@ export interface CreateAuditLogParams {
   action: AuditAction
   entityType: string
   entityId?: string
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 }
 
 /**

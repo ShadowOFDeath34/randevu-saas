@@ -77,8 +77,8 @@ export const defaultConfigs = {
   // Genel API için - yuksek limit
   api: { windowMs: 60 * 1000, maxRequests: 60 }, // 1 dakika, 60 istek
 
-  // AI Chat için - dusuk limit (maliyetli)
-  ai: { windowMs: 60 * 1000, maxRequests: 10 }, // 1 dakika, 10 istek
+  // AI Chat için - yuksek limit (kullanici dostu)
+  ai: { windowMs: 60 * 1000, maxRequests: 20 }, // 1 dakika, 20 istek
 }
 
 /**

@@ -1,7 +1,27 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Check, CreditCard, Calendar, Crown, Zap, Building2, X } from 'lucide-react'
+import { useSubscription, usePlans, useUpgradePlan } from '@/hooks/use-subscription'
+import { Skeleton } from '@/components/ui/skeleton'
+
+interface Plan {
+  id: string
+  name: string
+  price: number
+  billingPeriod: string
+  features: string[]
+}
+
+interface Invoice {
+  id: string
+  invoiceNumber: string
+  amount: number
+  status: string
+  dueDate: string
+  paidAt?: string
+  description?: string
+}
 
 interface Subscription {
   id: string
@@ -16,79 +36,42 @@ interface Subscription {
   }
 }
 
-interface Invoice {
-  id: string
-  invoiceNumber: string
-  amount: number
-  status: string
-  dueDate: string
-  paidAt?: string
-  description?: string
-}
-
-interface Plan {
-  id: string
-  name: string
-  price: number
-  billingPeriod: string
-  features: string[]
-}
-
 export default function SubscriptionPage() {
-  const [subscription, setSubscription] = useState<Subscription | null>(null)
-  const [invoices, setInvoices] = useState<Invoice[]>([])
-  const [plans, setPlans] = useState<Plan[]>([])
-  const [loading, setLoading] = useState(true)
+  const { data: subscriptionData, isLoading: subLoading } = useSubscription()
+  const { data: plans = [], isLoading: plansLoading } = usePlans()
+  const upgradePlan = useUpgradePlan()
+
   const [showUpgrade, setShowUpgrade] = useState(false)
-  const [upgrading, setUpgrading] = useState(false)
 
-  useEffect(() => {
-    fetchData()
-  }, [])
-
-  const fetchData = async () => {
-    try {
-      const [subRes, plansRes] = await Promise.all([
-        fetch('/api/subscription'),
-        fetch('/api/plans')
-      ])
-      const subData = await subRes.json()
-      const plansData = await plansRes.json()
-      
-      setSubscription(subData.subscription)
-      setInvoices(subData.invoices || [])
-      setPlans(plansData)
-    } catch (error) {
-      console.error('Error fetching subscription:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleUpgrade = async (planId: string) => {
-    setUpgrading(true)
-    try {
-      const res = await fetch('/api/subscription/upgrade', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ planId })
-      })
-      
-      if (res.ok) {
-        await fetchData()
-        setShowUpgrade(false)
-      }
-    } catch (error) {
-      console.error('Upgrade error:', error)
-    } finally {
-      setUpgrading(false)
-    }
-  }
-
-  if (loading) return <div className="text-center py-20">Yükleniyor...</div>
+  const subscription = subscriptionData?.subscription
+  const invoices = subscriptionData?.invoices || []
 
   const currentPlan = subscription?.plan
   const isTrial = subscription?.status === 'trial'
+
+  const handleUpgrade = async (planId: string) => {
+    await upgradePlan.mutateAsync(planId)
+    setShowUpgrade(false)
+  }
+
+  if (subLoading || plansLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <Skeleton className="h-8 w-32" />
+          <Skeleton className="h-10 w-32" />
+        </div>
+
+        <Skeleton className="h-40 w-full rounded-xl" />
+
+        <div className="grid md:grid-cols-3 gap-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-32 rounded-xl" />
+          ))}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -157,7 +140,7 @@ export default function SubscriptionPage() {
             <span className="text-sm text-gray-500">Ödenen</span>
           </div>
           <p className="text-2xl font-bold text-gray-900">
-            {invoices.filter(i => i.status === 'paid').reduce((sum, i) => sum + i.amount, 0)} <span className="text-sm font-normal text-gray-500">TL</span>
+            {invoices.filter((i: Invoice) => i.status === 'paid').reduce((sum: number, i: Invoice) => sum + i.amount, 0)} <span className="text-sm font-normal text-gray-500">TL</span>
           </p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-6">
@@ -176,14 +159,14 @@ export default function SubscriptionPage() {
         <div className="px-6 py-4 border-b border-gray-200">
           <h3 className="font-semibold text-gray-900">Faturalar</h3>
         </div>
-        
+
         {invoices.length === 0 ? (
           <div className="p-6 text-center text-gray-500">
             Henüz fatura yok
           </div>
         ) : (
           <div className="divide-y divide-gray-200">
-            {invoices.map(invoice => (
+            {invoices.map((invoice: Invoice) => (
               <div key={invoice.id} className="px-6 py-4 flex justify-between items-center">
                 <div>
                   <p className="font-medium text-gray-900">{invoice.invoiceNumber}</p>
@@ -215,14 +198,14 @@ export default function SubscriptionPage() {
                 <X className="w-6 h-6" />
               </button>
             </div>
-            
+
             <div className="p-6 grid md:grid-cols-3 gap-4">
-              {plans.map(plan => (
-                <div 
+              {plans.map((plan: Plan) => (
+                <div
                   key={plan.id}
                   className={`border-2 rounded-xl p-6 ${
-                    plan.name === currentPlan?.name 
-                      ? 'border-indigo-500 bg-indigo-50' 
+                    plan.name === currentPlan?.name
+                      ? 'border-indigo-500 bg-indigo-50'
                       : 'border-gray-200 hover:border-indigo-300'
                   }`}
                 >
@@ -230,9 +213,9 @@ export default function SubscriptionPage() {
                   <p className="text-3xl font-bold text-indigo-600 mb-4">
                     {plan.price} TL <span className="text-sm font-normal text-gray-500">/ {plan.billingPeriod}</span>
                   </p>
-                  
+
                   <ul className="space-y-2 mb-6">
-                    {plan.features.map((feature, i) => (
+                    {plan.features.map((feature: string, i: number) => (
                       <li key={i} className="flex items-center gap-2 text-sm text-gray-600">
                         <Check className="w-4 h-4 text-green-500" />
                         {feature}
@@ -242,14 +225,14 @@ export default function SubscriptionPage() {
 
                   <button
                     onClick={() => plan.name !== currentPlan?.name && handleUpgrade(plan.id)}
-                    disabled={plan.name === currentPlan?.name || upgrading}
+                    disabled={plan.name === currentPlan?.name || upgradePlan.isPending}
                     className={`w-full py-2 rounded-lg font-medium ${
                       plan.name === currentPlan?.name
                         ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                         : 'bg-indigo-600 text-white hover:bg-indigo-700'
                     }`}
                   >
-                    {plan.name === currentPlan?.name ? 'Mevcut Plan' : upgrading ? 'İşleniyor...' : 'Seç'}
+                    {plan.name === currentPlan?.name ? 'Mevcut Plan' : upgradePlan.isPending ? 'İşleniyor...' : 'Seç'}
                   </button>
                 </div>
               ))}

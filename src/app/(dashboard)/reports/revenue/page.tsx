@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import {
   DollarSign,
   TrendingUp,
@@ -10,54 +10,31 @@ import {
   PieChart,
   BarChart3
 } from 'lucide-react'
+import { useRevenueReport } from '@/hooks/use-reports'
+import { Skeleton } from '@/components/ui/skeleton'
 
-interface RevenueData {
-  summary: {
-    totalRevenue: number
-    totalBookings: number
-    averageRevenuePerBooking: number
-    revenueGrowth: number
-  }
-  dailyRevenue: Array<{
-    date: string
-    revenue: number
-    bookings: number
-  }>
-  serviceBreakdown: Array<{
-    name: string
-    revenue: number
-    count: number
-  }>
+interface DailyRevenue {
+  date: string
+  revenue: number
+  bookings: number
+}
+
+interface ServiceBreakdown {
+  name: string
+  revenue: number
+  count: number
 }
 
 export default function RevenueReportPage() {
-  const [data, setData] = useState<RevenueData | null>(null)
-  const [loading, setLoading] = useState(true)
   const [period, setPeriod] = useState<'week' | 'month' | 'year'>('month')
-
-  useEffect(() => {
-    fetchData()
-  }, [period])
-
-  const fetchData = async () => {
-    setLoading(true)
-    try {
-      const res = await fetch(`/api/reports/revenue?period=${period}`)
-      const data = await res.json()
-      setData(data)
-    } catch (error) {
-      console.error('Error fetching revenue:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const { data, isLoading } = useRevenueReport(period)
 
   const downloadCSV = () => {
     if (!data) return
 
     const csvContent = [
       ['Tarih', 'Gelir', 'Randevu Sayısı'],
-      ...data.dailyRevenue.map(d => [d.date, d.revenue.toString(), d.bookings.toString()])
+      ...data.dailyRevenue.map((d: DailyRevenue) => [d.date, d.revenue.toString(), d.bookings.toString()])
     ].map(row => row.join(',')).join('\n')
 
     const blob = new Blob([csvContent], { type: 'text/csv' })
@@ -68,10 +45,27 @@ export default function RevenueReportPage() {
     a.click()
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <Skeleton className="h-8 w-32 mb-2" />
+            <Skeleton className="h-4 w-48" />
+          </div>
+          <Skeleton className="h-10 w-64" />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-40 rounded-xl" />
+          ))}
+        </div>
+
+        <div className="grid lg:grid-cols-2 gap-6">
+          <Skeleton className="h-80 rounded-xl" />
+          <Skeleton className="h-80 rounded-xl" />
+        </div>
       </div>
     )
   }
@@ -194,8 +188,8 @@ export default function RevenueReportPage() {
         <div className="bg-white p-6 rounded-xl border border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Günlük Gelir</h2>
           <div className="h-64 flex items-end gap-2">
-            {dailyRevenue.map((day, index) => {
-              const maxRevenue = Math.max(...dailyRevenue.map(d => d.revenue))
+            {dailyRevenue.map((day: DailyRevenue) => {
+              const maxRevenue = Math.max(...dailyRevenue.map((d: DailyRevenue) => d.revenue))
               const height = maxRevenue > 0 ? (day.revenue / maxRevenue) * 100 : 0
 
               return (
@@ -222,8 +216,8 @@ export default function RevenueReportPage() {
         <div className="bg-white p-6 rounded-xl border border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Hizmet Bazlı Gelir</h2>
           <div className="space-y-4">
-            {serviceBreakdown.slice(0, 6).map((service, index) => {
-              const maxRevenue = Math.max(...serviceBreakdown.map(s => s.revenue))
+            {serviceBreakdown.slice(0, 6).map((service: ServiceBreakdown) => {
+              const maxRevenue = Math.max(...serviceBreakdown.map((s: ServiceBreakdown) => s.revenue))
               const percentage = maxRevenue > 0 ? (service.revenue / maxRevenue) * 100 : 0
 
               return (
@@ -263,7 +257,7 @@ export default function RevenueReportPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {dailyRevenue.slice().reverse().map((day) => (
+              {dailyRevenue.slice().reverse().map((day: DailyRevenue) => (
                 <tr key={day.date} className="hover:bg-gray-50">
                   <td className="px-6 py-4 text-sm text-gray-900">
                     {new Date(day.date).toLocaleDateString('tr-TR', {

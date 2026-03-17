@@ -24,7 +24,7 @@ export default function BookingsPage() {
   const [search, setSearch] = useState('')
 
   const { data: bookings = [], isLoading, error } = useBookings(
-    filter !== 'all' ? { status: filter as any } : undefined
+    filter !== 'all' ? { status: filter as BookingStatus } : undefined
   )
   const updateMutation = useUpdateBooking()
 

@@ -1,34 +1,42 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { formatDate, addMinutesToTime } from '@/lib/utils'
+import { useState, useEffect, useRef } from 'react'
+import { useServices } from '@/hooks/use-services'
+import { useStaff } from '@/hooks/use-staff'
+import { useCustomers } from '@/hooks/use-customers'
+import { useCreateBooking } from '@/hooks/use-bookings'
+import { addMinutesToTime } from '@/lib/utils'
+import { Skeleton } from '@/components/ui/skeleton'
 
 interface Service {
   id: string
   name: string
-  durationMinutes: number
-  price: number | null
+  duration: number
+  price: number
 }
 
 interface Staff {
   id: string
-  fullName: string
+  name: string
 }
 
 interface Customer {
   id: string
-  fullName: string
+  name: string
   phone: string
 }
 
 export default function QuickBookingPage() {
-  const [services, setServices] = useState<Service[]>([])
-  const [staff, setStaff] = useState<Staff[]>([])
-  const [customers, setCustomers] = useState<Customer[]>([])
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [success, setSuccess] = useState(false)
+  const { data: services = [], isLoading: servicesLoading } = useServices()
+  const { data: staff = [], isLoading: staffLoading } = useStaff()
+  const { data: customersData, isLoading: customersLoading } = useCustomers()
+  const createBooking = useCreateBooking()
 
+  const customers = customersData?.customers || []
+
+  const [success, setSuccess] = useState(false)
+  const [existingCustomer, setExistingCustomer] = useState(true)
+  const initialValuesSet = useRef(false)
   const [formData, setFormData] = useState({
     customerId: '',
     customerName: '',
@@ -39,50 +47,29 @@ export default function QuickBookingPage() {
     time: '09:00'
   })
 
-  const [existingCustomer, setExistingCustomer] = useState(true)
-
+  // Set initial values when data loads - using ref to prevent cascading renders
   useEffect(() => {
-    fetchData()
-  }, [])
-
-  const fetchData = async () => {
-    try {
-      const [servicesRes, staffRes, customersRes] = await Promise.all([
-        fetch('/api/services'),
-        fetch('/api/staff'),
-        fetch('/api/customers')
-      ])
-
-      const [servicesData, staffData, customersData] = await Promise.all([
-        servicesRes.json(),
-        staffRes.json(),
-        customersRes.json()
-      ])
-
-      setServices(servicesData)
-      setStaff(staffData)
-      setCustomers(customersData)
-
-      if (servicesData.length > 0) {
-        setFormData(prev => ({ ...prev, serviceId: servicesData[0].id }))
-      }
-      if (staffData.length > 0) {
-        setFormData(prev => ({ ...prev, staffId: staffData[0].id }))
-      }
-    } catch (error) {
-      console.error('Error fetching data:', error)
-    } finally {
-      setLoading(false)
+    if (initialValuesSet.current) return
+    if (services.length > 0 || staff.length > 0) {
+      initialValuesSet.current = true
+      // Use setTimeout to avoid synchronous setState in effect
+      setTimeout(() => {
+        setFormData(prev => ({
+          ...prev,
+          serviceId: services.length > 0 ? services[0].id : prev.serviceId,
+          staffId: staff.length > 0 ? staff[0].id : prev.staffId
+        }))
+      }, 0)
     }
-  }
+  }, [services, staff])
 
   const handleCustomerChange = (customerId: string) => {
-    const customer = customers.find(c => c.id === customerId)
+    const customer = customers.find((c: Customer) => c.id === customerId)
     if (customer) {
       setFormData(prev => ({
         ...prev,
         customerId,
-        customerName: customer.fullName,
+        customerName: customer.name,
         customerPhone: customer.phone
       }))
     }
@@ -90,47 +77,52 @@ export default function QuickBookingPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setSaving(true)
 
-    try {
-      const service = services.find(s => s.id === formData.serviceId)
-      const endTime = addMinutesToTime(formData.time, service?.durationMinutes || 30)
+    const service = services.find((s: Service) => s.id === formData.serviceId)
+    const endTime = addMinutesToTime(formData.time, service?.duration || 30)
 
-      const res = await fetch('/api/bookings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          customerId: existingCustomer ? formData.customerId : undefined,
-          customerName: formData.customerName,
-          customerPhone: formData.customerPhone,
-          serviceId: formData.serviceId,
-          staffId: formData.staffId,
-          bookingDate: formData.date,
-          startTime: formData.time,
-          endTime
-        })
-      })
+    await createBooking.mutateAsync({
+      customerName: formData.customerName,
+      customerPhone: formData.customerPhone,
+      serviceId: formData.serviceId,
+      staffId: formData.staffId,
+      startTime: `${formData.date}T${formData.time}`,
+      endTime: `${formData.date}T${endTime}`,
+    })
 
-      if (res.ok) {
-        setSuccess(true)
-        setTimeout(() => {
-          setSuccess(false)
-          setFormData(prev => ({
-            ...prev,
-            customerId: '',
-            customerName: '',
-            customerPhone: ''
-          }))
-        }, 2000)
-      }
-    } catch (error) {
-      console.error('Error creating booking:', error)
-    } finally {
-      setSaving(false)
-    }
+    setSuccess(true)
+    setTimeout(() => {
+      setSuccess(false)
+      setFormData(prev => ({
+        ...prev,
+        customerId: '',
+        customerName: '',
+        customerPhone: ''
+      }))
+    }, 2000)
   }
 
-  if (loading) return <div className="text-center py-20">Yükleniyor...</div>
+  const isLoading = servicesLoading || staffLoading || customersLoading
+
+  if (isLoading) {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <Skeleton className="h-8 w-48 mb-6" />
+        <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
+          <Skeleton className="h-10 w-full" />
+          <div className="grid md:grid-cols-2 gap-4">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+          <div className="grid md:grid-cols-2 gap-4">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+          <Skeleton className="h-12 w-full" />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -162,8 +154,8 @@ export default function QuickBookingPage() {
               required
             >
               <option value="">Müşteri seçin</option>
-              {customers.map(c => (
-                <option key={c.id} value={c.id}>{c.fullName} - {c.phone}</option>
+              {customers.map((c: Customer) => (
+                <option key={c.id} value={c.id}>{c.name} - {c.phone}</option>
               ))}
             </select>
           ) : (
@@ -197,9 +189,9 @@ export default function QuickBookingPage() {
               className="w-full px-3 py-2 border border-gray-300 rounded-lg"
               required
             >
-              {services.map(s => (
+              {services.map((s: Service) => (
                 <option key={s.id} value={s.id}>
-                  {s.name} ({s.durationMinutes} dk)
+                  {s.name} ({s.duration} dk)
                 </option>
               ))}
             </select>
@@ -213,8 +205,8 @@ export default function QuickBookingPage() {
               className="w-full px-3 py-2 border border-gray-300 rounded-lg"
               required
             >
-              {staff.map(s => (
-                <option key={s.id} value={s.id}>{s.fullName}</option>
+              {staff.map((s: Staff) => (
+                <option key={s.id} value={s.id}>{s.name}</option>
               ))}
             </select>
           </div>
@@ -246,10 +238,10 @@ export default function QuickBookingPage() {
 
         <button
           type="submit"
-          disabled={saving}
+          disabled={createBooking.isPending}
           className="w-full py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 disabled:opacity-50"
         >
-          {saving ? 'Oluşturuluyor...' : 'Randevu Oluştur'}
+          {createBooking.isPending ? 'Oluşturuluyor...' : 'Randevu Oluştur'}
         </button>
       </form>
     </div>

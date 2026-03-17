@@ -92,3 +92,33 @@ export function useStaffPerformance() {
     queryFn: fetchStaffPerformance,
   });
 }
+
+interface AnalyticsStats {
+  totalBookings: number;
+  completedBookings: number;
+  cancelledBookings: number;
+  noShowBookings: number;
+  totalRevenue: number;
+  totalCustomers: number;
+  repeatCustomers: number;
+  averageRating: number;
+  popularServices: { name: string; count: number }[];
+  topStaff: { name: string; count: number }[];
+  dailyBookings: { date: string; count: number }[];
+  weeklyStats: { day: string; bookings: number; revenue: number }[];
+}
+
+const fetchAnalyticsStats = async (period: string): Promise<AnalyticsStats> => {
+  const response = await fetch(`/api/analytics?period=${period}`);
+  if (!response.ok) {
+    throw new Error("Analytics verileri yüklenirken hata oluştu");
+  }
+  return response.json();
+};
+
+export function useAnalyticsStats(period: string) {
+  return useQuery({
+    queryKey: ["analytics", "stats", period],
+    queryFn: () => fetchAnalyticsStats(period),
+  });
+}

@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Inter, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { QueryProvider } from "@/components/query-provider";
+import { ThemeProvider } from "@/components/theme-provider";
+import StructuredData from "@/components/structured-data";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -69,17 +71,24 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="tr">
+    <html lang="tr" dir="ltr" suppressHydrationWarning>
       <head>
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="apple-touch-icon" href="/icon-192.png" />
+        {/* DNS prefetch ve preconnect ile harici kaynaklara erişimi hızlandır */}
+        <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* Viewport meta tag'i Next.js tarafından otomatik eklenir */}
       </head>
       <body
         className={`${inter.variable} ${geistMono.variable} antialiased`}
       >
-        <QueryProvider>
-          {children}
-        </QueryProvider>
+        <ThemeProvider defaultTheme="system" storageKey="randevu-theme">
+          <QueryProvider>
+            {children}
+          </QueryProvider>
+        </ThemeProvider>
+        <StructuredData />
       </body>
     </html>
   );

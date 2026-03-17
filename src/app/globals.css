@@ -56,6 +56,32 @@
   --radius-2xl: 1.25rem;
 }
 
+/* Dark Mode Color Tokens */
+.dark {
+  /* Surface - Dark */
+  --background: 214 22% 8%;
+  --foreground: 220 27% 98%;
+  --surface-1: 214 22% 12%;
+  --surface-2: 213 18% 16%;
+  --surface-3: 212 14% 22%;
+
+  /* Shadows - Dark */
+  --shadow-color: 0 0% 0%;
+
+  /* Neutral - Inverted for dark mode */
+  --neutral-50: 216 28% 7%;
+  --neutral-100: 214 22% 12%;
+  --neutral-200: 213 18% 20%;
+  --neutral-300: 212 14% 28%;
+  --neutral-400: 214 10% 46%;
+  --neutral-500: 215 12% 63%;
+  --neutral-600: 216 14% 82%;
+  --neutral-700: 218 17% 91%;
+  --neutral-800: 220 20% 95%;
+  --neutral-900: 220 27% 98%;
+  --neutral-950: 220 27% 100%;
+}
+
 /* ── Tailwind v4 Theme ── */
 @theme inline {
   --color-background: hsl(var(--background));

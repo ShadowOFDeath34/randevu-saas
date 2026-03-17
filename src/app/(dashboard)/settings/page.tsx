@@ -1,6 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import {
+  useBusinessProfile,
+  useBusinessHours,
+  useUpdateBusinessProfile,
+  useUpdateBusinessHours,
+} from '@/hooks/use-settings'
+import { Skeleton } from '@/components/ui/skeleton'
 
 interface BusinessProfile {
   businessName: string
@@ -21,12 +28,12 @@ interface BusinessHours {
 }
 
 export default function SettingsPage() {
-  const [profile, setProfile] = useState<BusinessProfile | null>(null)
-  const [hours, setHours] = useState<BusinessHours[]>([])
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
+  const { data: profile, isLoading: profileLoading } = useBusinessProfile()
+  const { data: hours = [], isLoading: hoursLoading } = useBusinessHours()
+  const updateProfile = useUpdateBusinessProfile()
+  const updateHours = useUpdateBusinessHours()
 
+  const [saved, setSaved] = useState(false)
   const [profileForm, setProfileForm] = useState({
     businessName: '',
     phone: '',
@@ -36,92 +43,87 @@ export default function SettingsPage() {
     district: '',
     description: ''
   })
+  const [localHours, setLocalHours] = useState<BusinessHours[]>([])
+  const profileInitialized = useRef(false)
+  const hoursInitialized = useRef(false)
 
+  // Initialize profile form when data loads - using ref to prevent cascading renders
   useEffect(() => {
-    fetchSettings()
-  }, [])
-
-  const fetchSettings = async () => {
-    try {
-      const [profileRes, hoursRes] = await Promise.all([
-        fetch('/api/settings/profile'),
-        fetch('/api/settings/hours')
-      ])
-      
-      const profileData = await profileRes.json()
-      const hoursData = await hoursRes.json()
-      
-      setProfile(profileData)
-      setHours(hoursData)
-      
-      if (profileData) {
+    if (profile && !profileInitialized.current) {
+      profileInitialized.current = true
+      // Use setTimeout to avoid synchronous setState in effect
+      setTimeout(() => {
         setProfileForm({
-          businessName: profileData.businessName || '',
-          phone: profileData.phone || '',
-          email: profileData.email || '',
-          address: profileData.address || '',
-          city: profileData.city || '',
-          district: profileData.district || '',
-          description: profileData.description || ''
+          businessName: profile.businessName || '',
+          phone: profile.phone || '',
+          email: profile.email || '',
+          address: profile.address || '',
+          city: profile.city || '',
+          district: profile.district || '',
+          description: profile.description || ''
         })
-      }
-    } catch (error) {
-      console.error('Error fetching settings:', error)
-    } finally {
-      setLoading(false)
+      }, 0)
     }
-  }
+  }, [profile])
+
+  // Initialize hours when data loads - using ref to prevent cascading renders
+  useEffect(() => {
+    if (hours.length > 0 && !hoursInitialized.current) {
+      hoursInitialized.current = true
+      // Use setTimeout to avoid synchronous setState in effect
+      setTimeout(() => {
+        setLocalHours(hours)
+      }, 0)
+    }
+  }, [hours])
 
   const saveProfile = async () => {
-    setSaving(true)
-    try {
-      const res = await fetch('/api/settings/profile', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(profileForm)
-      })
-      
-      if (res.ok) {
-        setSaved(true)
-        setTimeout(() => setSaved(false), 3000)
-      }
-    } catch (error) {
-      console.error('Error saving profile:', error)
-    } finally {
-      setSaving(false)
-    }
+    await updateProfile.mutateAsync(profileForm)
+    setSaved(true)
+    setTimeout(() => setSaved(false), 3000)
   }
 
-  const updateHours = async (dayOfWeek: number, field: string, value: any) => {
-    const newHours = hours.map(h => 
+  const updateHourField = (dayOfWeek: number, field: string, value: string | boolean | null) => {
+    setLocalHours(prev => prev.map(h =>
       h.dayOfWeek === dayOfWeek ? { ...h, [field]: value } : h
-    )
-    setHours(newHours)
+    ))
   }
 
   const saveHours = async () => {
-    setSaving(true)
-    try {
-      const res = await fetch('/api/settings/hours', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(hours)
-      })
-      
-      if (res.ok) {
-        setSaved(true)
-        setTimeout(() => setSaved(false), 3000)
-      }
-    } catch (error) {
-      console.error('Error saving hours:', error)
-    } finally {
-      setSaving(false)
-    }
+    await updateHours.mutateAsync(localHours)
+    setSaved(true)
+    setTimeout(() => setSaved(false), 3000)
   }
 
   const dayNames = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi']
 
-  if (loading) return <div className="text-center py-10">Yükleniyor...</div>
+  if (profileLoading || hoursLoading) {
+    return (
+      <div className="space-y-6 max-w-3xl">
+        <div className="flex justify-between items-center">
+          <Skeleton className="h-8 w-32" />
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
+          <Skeleton className="h-6 w-48" />
+          <div className="grid gap-4">
+            <Skeleton className="h-10 w-full" />
+            <div className="grid md:grid-cols-2 gap-4">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <Skeleton className="h-6 w-48 mb-4" />
+          <div className="space-y-3">
+            {Array.from({ length: 7 }).map((_, i) => (
+              <Skeleton key={i} className="h-12 w-full" />
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -135,7 +137,7 @@ export default function SettingsPage() {
       {/* İşletme Profili */}
       <div className="bg-white rounded-xl border border-gray-200 p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">İşletme Bilgileri</h2>
-        
+
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">İşletme Adı</label>
@@ -213,8 +215,8 @@ export default function SettingsPage() {
           {profile?.bookingSlug && (
             <div className="bg-gray-50 p-4 rounded-lg">
               <label className="block text-sm font-medium text-gray-700 mb-1">Randevu Sayfası</label>
-              <a 
-                href={`/b/${profile.bookingSlug}`} 
+              <a
+                href={`/b/${profile.bookingSlug}`}
                 target="_blank"
                 className="text-indigo-600 hover:underline"
               >
@@ -225,10 +227,10 @@ export default function SettingsPage() {
 
           <button
             onClick={saveProfile}
-            disabled={saving}
+            disabled={updateProfile.isPending}
             className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
           >
-            {saving ? 'Kaydediliyor...' : 'Kaydet'}
+            {updateProfile.isPending ? 'Kaydediliyor...' : 'Kaydet'}
           </button>
         </div>
       </div>
@@ -236,40 +238,40 @@ export default function SettingsPage() {
       {/* Çalışma Saatleri */}
       <div className="bg-white rounded-xl border border-gray-200 p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Çalışma Saatleri</h2>
-        
+
         <div className="space-y-3">
-          {hours.map((hour) => (
+          {localHours.map((hour) => (
             <div key={hour.dayOfWeek} className="flex items-center gap-4">
               <div className="w-28 font-medium text-gray-700">
                 {dayNames[hour.dayOfWeek]}
               </div>
-              
+
               <div className="flex items-center gap-2">
                 <input
                   type="checkbox"
                   checked={!hour.isClosed}
-                  onChange={(e) => updateHours(hour.dayOfWeek, 'isClosed', !e.target.checked)}
+                  onChange={(e) => updateHourField(hour.dayOfWeek, 'isClosed', !e.target.checked)}
                   className="rounded border-gray-300"
                 />
-                
+
                 {!hour.isClosed && (
                   <>
                     <input
                       type="time"
                       value={hour.openTime || '09:00'}
-                      onChange={(e) => updateHours(hour.dayOfWeek, 'openTime', e.target.value)}
+                      onChange={(e) => updateHourField(hour.dayOfWeek, 'openTime', e.target.value)}
                       className="px-2 py-1 border border-gray-300 rounded"
                     />
                     <span className="text-gray-500">-</span>
                     <input
                       type="time"
                       value={hour.closeTime || '18:00'}
-                      onChange={(e) => updateHours(hour.dayOfWeek, 'closeTime', e.target.value)}
+                      onChange={(e) => updateHourField(hour.dayOfWeek, 'closeTime', e.target.value)}
                       className="px-2 py-1 border border-gray-300 rounded"
                     />
                   </>
                 )}
-                
+
                 {hour.isClosed && (
                   <span className="text-gray-500">Kapalı</span>
                 )}
@@ -280,10 +282,10 @@ export default function SettingsPage() {
 
         <button
           onClick={saveHours}
-          disabled={saving}
+          disabled={updateHours.isPending}
           className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
         >
-          {saving ? 'Kaydediliyor...' : 'Çalışma Saatlerini Kaydet'}
+          {updateHours.isPending ? 'Kaydediliyor...' : 'Çalışma Saatlerini Kaydet'}
         </button>
       </div>
     </div>

@@ -3,18 +3,23 @@ import { redirect } from 'next/navigation'
 import { db } from '@/lib/db'
 import { formatDate } from '@/lib/utils'
 import Link from 'next/link'
-import { 
-  Calendar, 
-  Clock, 
-  CheckCircle2, 
+import {
+  Calendar,
+  Clock,
+  CheckCircle2,
   Users,
-  TrendingUp,
   ArrowRight,
   Plus,
   Scissors,
   UserPlus,
   Sparkles
 } from 'lucide-react'
+
+interface CustomerRisk {
+  noShowProbability: number | null
+  totalBookings: number
+  noShowCount: number
+}
 
 export default async function DashboardPage() {
   const session = await auth()
@@ -30,8 +35,6 @@ export default async function DashboardPage() {
   const [
     todayBookings,
     totalCustomers,
-    totalServices,
-    totalStaff,
     recentBookings,
     pendingBookings
   ] = await Promise.all([
@@ -39,8 +42,6 @@ export default async function DashboardPage() {
       where: { tenantId, bookingDate: today }
     }),
     db.customer.count({ where: { tenantId } }),
-    db.service.count({ where: { tenantId, isActive: true } }),
-    db.staff.count({ where: { tenantId, isActive: true } }),
     db.booking.findMany({
       where: { tenantId },
       orderBy: { createdAt: 'desc' },
@@ -111,7 +112,7 @@ export default async function DashboardPage() {
     arrived:   { label: 'Geldi (Kiosk)', style: 'bg-violet-50 text-violet-700 border border-violet-200 shadow-sm shadow-violet-500/10' },
   }
 
-  const getRiskBadge = (customer: any) => {
+  const getRiskBadge = (customer: CustomerRisk) => {
     let riskLevel = 'Düşük'
     let style = 'hidden'
     let probability = customer.noShowProbability || 0

@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { X, Cookie, Settings, Shield, BarChart3 } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 interface CookiePreferences {
   necessary: boolean;
@@ -26,14 +25,20 @@ export function CookieConsent() {
   const [isVisible, setIsVisible] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [preferences, setPreferences] = useState<CookiePreferences>(defaultPreferences);
+  const initialized = useRef(false);
 
   useEffect(() => {
+    if (initialized.current) return;
+    initialized.current = true;
     const stored = localStorage.getItem(COOKIE_CONSENT_KEY);
-    if (!stored) {
-      setIsVisible(true);
-    } else {
-      setPreferences(JSON.parse(stored));
-    }
+    // Use setTimeout to avoid synchronous setState in effect
+    setTimeout(() => {
+      if (!stored) {
+        setIsVisible(true);
+      } else {
+        setPreferences(JSON.parse(stored));
+      }
+    }, 0);
   }, []);
 
   const savePreferences = (prefs: CookiePreferences) => {

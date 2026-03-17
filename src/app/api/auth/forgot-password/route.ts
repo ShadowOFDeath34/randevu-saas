@@ -2,8 +2,14 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { notificationService } from '@/lib/notification'
 import crypto from 'crypto'
+import { checkIPRateLimit, defaultConfigs, createRateLimitResponse } from '@/lib/rate-limit'
 
 export async function POST(req: Request) {
+  // Rate limiting: 5 requests per 15 minutes per IP
+  const rateLimit = await checkIPRateLimit(req, defaultConfigs.auth)
+  if (!rateLimit.success) {
+    return createRateLimitResponse(rateLimit)
+  }
   try {
     const { email } = await req.json()
 

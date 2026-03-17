@@ -30,7 +30,28 @@
       "Bash(git commit -m \"feat: React Query entegrasyonu:*)",
       "Bash(git commit -m \"feat: Dashboard sayfaları React Query''ye çevrildi:*)",
       "Bash(npm test:*)",
-      "Bash(git commit -m \"feat: UI animasyonları eklendi:*)"
+      "Bash(git commit -m \"feat: UI animasyonları eklendi:*)",
+      "Bash(vercel --version)",
+      "Bash(vercel link:*)",
+      "Bash(vercel --yes)",
+      "Bash(curl -s https://randevu-saas-gke5ha373-shadowofdeath34s-projects.vercel.app/api/health)",
+      "Bash(vercel --prod --yes)",
+      "Bash(curl:*)",
+      "Bash(vercel curl:*)",
+      "Bash(vercel env:*)",
+      "Bash(railway login:*)",
+      "Bash(bash)",
+      "Bash(1:*)",
+      "WebFetch(domain:console.neon.tech)",
+      "mcp__plugin_playwright_playwright__browser_wait_for",
+      "mcp__plugin_playwright_playwright__browser_type",
+      "Bash(vercel:*)",
+      "mcp__plugin_playwright_playwright__browser_select_option",
+      "mcp__plugin_playwright_playwright__browser_press_key",
+      "mcp__plugin_playwright_playwright__browser_snapshot",
+      "mcp__plugin_playwright_playwright__browser_fill_form",
+      "WebFetch(domain:resend.com)",
+      "WebFetch(domain:sandbox.iyzico.com)"
     ]
   }
 }

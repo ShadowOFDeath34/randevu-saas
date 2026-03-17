@@ -1,7 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { formatDate, formatTime, addMinutesToTime, timeToMinutes } from '@/lib/utils'
+import { useState } from 'react'
+import { useCalendarBookings } from '@/hooks/use-calendar'
+import { useStaff } from '@/hooks/use-staff'
+import { Skeleton } from '@/components/ui/skeleton'
+import { timeToMinutes } from '@/lib/utils'
 
 interface Booking {
   id: string
@@ -14,32 +17,17 @@ interface Booking {
   staff: { fullName: string }
 }
 
+interface Staff {
+  id: string
+  name: string
+}
+
 export default function CalendarPage() {
-  const [bookings, setBookings] = useState<Booking[]>([])
-  const [loading, setLoading] = useState(true)
   const [currentDate, setCurrentDate] = useState(new Date())
   const [view, setView] = useState<'week' | 'day'>('week')
   const [selectedStaff, setSelectedStaff] = useState('')
 
-  useEffect(() => {
-    fetchBookings()
-  }, [currentDate, view, selectedStaff])
-
-  const fetchBookings = async () => {
-    setLoading(true)
-    try {
-      const startDate = getStartDate()
-      const endDate = getEndDate()
-      
-      const res = await fetch(`/api/calendar?start=${startDate}&end=${endDate}&staffId=${selectedStaff}`)
-      const data = await res.json()
-      setBookings(data)
-    } catch (error) {
-      console.error('Error fetching bookings:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const { data: staff = [] } = useStaff()
 
   const getStartDate = () => {
     if (view === 'week') {
@@ -60,6 +48,12 @@ export default function CalendarPage() {
     }
     return currentDate.toISOString().split('T')[0]
   }
+
+  const { data: bookings = [], isLoading, error } = useCalendarBookings({
+    startDate: getStartDate(),
+    endDate: getEndDate(),
+    staffId: selectedStaff || undefined,
+  })
 
   const getWeekDays = () => {
     const days = []
@@ -82,7 +76,7 @@ export default function CalendarPage() {
 
   const getBookingsForDay = (date: Date) => {
     const dateStr = date.toISOString().split('T')[0]
-    return bookings.filter(b => b.bookingDate === dateStr)
+    return (bookings as Booking[]).filter(b => b.bookingDate === dateStr)
   }
 
   const getBookingStyle = (booking: Booking) => {
@@ -118,11 +112,36 @@ export default function CalendarPage() {
   const weekDays = getWeekDays()
   const hours = getHours()
 
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <Skeleton className="h-8 w-32" />
+          <div className="flex items-center gap-4">
+            <Skeleton className="h-10 w-40" />
+            <Skeleton className="h-10 w-32" />
+          </div>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <Skeleton className="h-[600px] w-full" />
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-10 text-red-600">
+        Takvim verileri yüklenirken hata oluştu. Lütfen sayfayı yenileyin.
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-2xl font-bold text-gray-900">Takvim</h1>
-        
+
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <button
@@ -144,8 +163,19 @@ export default function CalendarPage() {
               →
             </button>
           </div>
-          
+
           <div className="flex items-center gap-2">
+            <select
+              value={selectedStaff}
+              onChange={(e) => setSelectedStaff(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg"
+            >
+              <option value="">Tüm Personel</option>
+              {(staff as Staff[]).map((s) => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+
             <select
               value={view}
               onChange={(e) => setView(e.target.value as 'week' | 'day')}
@@ -159,9 +189,7 @@ export default function CalendarPage() {
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        {loading ? (
-          <div className="text-center py-20">Yükleniyor...</div>
-        ) : view === 'week' ? (
+        {view === 'week' ? (
           <div className="overflow-x-auto">
             <div className="min-w-[800px]">
               <div className="grid grid-cols-8 border-b border-gray-200">
@@ -169,8 +197,8 @@ export default function CalendarPage() {
                 {weekDays.map((day, i) => {
                   const isToday = day.toDateString() === new Date().toDateString()
                   return (
-                    <div 
-                      key={i} 
+                    <div
+                      key={i}
                       className={`p-3 text-center border-r ${isToday ? 'bg-indigo-50' : ''}`}
                     >
                       <div className="text-xs text-gray-500">
@@ -183,7 +211,7 @@ export default function CalendarPage() {
                   )
                 })}
               </div>
-              
+
               <div className="relative">
                 {hours.map((hour, i) => (
                   <div key={hour} className="grid grid-cols-8 border-b border-gray-100">
@@ -196,8 +224,8 @@ export default function CalendarPage() {
                         return bh === parseInt(hour.split(':')[0])
                       })
                       return (
-                        <div 
-                          key={`${i}-${j}`} 
+                        <div
+                          key={`${i}-${j}`}
                           className="border-r h-[60px] relative hover:bg-gray-50"
                         >
                           {dayBookings.map(booking => {
@@ -225,9 +253,9 @@ export default function CalendarPage() {
           <div className="p-4">
             <div className="text-center mb-4">
               <h2 className="text-lg font-semibold">
-                {currentDate.toLocaleDateString('tr-TR', { 
-                  weekday: 'long', 
-                  day: 'numeric', 
+                {currentDate.toLocaleDateString('tr-TR', {
+                  weekday: 'long',
+                  day: 'numeric',
                   month: 'long',
                   year: 'numeric'
                 })}
@@ -237,7 +265,7 @@ export default function CalendarPage() {
               {getBookingsForDay(currentDate)
                 .sort((a, b) => a.startTime.localeCompare(b.startTime))
                 .map(booking => (
-                  <div 
+                  <div
                     key={booking.id}
                     className={`p-4 rounded-lg border-l-4 ${statusColors[booking.status]}`}
                   >

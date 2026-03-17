@@ -75,7 +75,7 @@ async function sendWithRetry(
     }
 
     return { success: true, messageId: data?.id }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`E-posta gönderme denemesi ${attempt} başarısız:`, error)
 
     if (attempt < MAX_RETRIES) {
@@ -84,6 +84,7 @@ async function sendWithRetry(
     }
 
     // Log failure
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     if (params.tenantId) {
       await db.notificationLog.create({
         data: {
@@ -95,14 +96,14 @@ async function sendWithRetry(
           payload: JSON.stringify({
             to: params.to,
             subject: params.subject,
-            error: error.message,
+            error: errorMessage,
           }),
           sentAt: new Date(),
         },
       })
     }
 
-    return { success: false, error: error.message }
+    return { success: false, error: errorMessage }
   }
 }
 

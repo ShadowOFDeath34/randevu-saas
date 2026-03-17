@@ -1,7 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Plus, X, Calendar as CalendarIcon } from 'lucide-react'
+import { useClosedDates, useAddClosedDate, useDeleteClosedDate } from '@/hooks/use-settings'
+import { Skeleton } from '@/components/ui/skeleton'
 
 interface ClosedDate {
   id: string
@@ -10,68 +12,42 @@ interface ClosedDate {
 }
 
 export default function ClosedDatesPage() {
-  const [closedDates, setClosedDates] = useState<ClosedDate[]>([])
-  const [loading, setLoading] = useState(true)
+  const { data: closedDates = [], isLoading } = useClosedDates()
+  const addClosedDate = useAddClosedDate()
+  const deleteClosedDate = useDeleteClosedDate()
+
   const [showModal, setShowModal] = useState(false)
   const [formData, setFormData] = useState({ date: '', reason: '' })
-  const [saving, setSaving] = useState(false)
 
-  useEffect(() => {
-    fetchClosedDates()
-  }, [])
-
-  const fetchClosedDates = async () => {
-    try {
-      const res = await fetch('/api/settings/closed-dates')
-      const data = await res.json()
-      setClosedDates(data)
-    } catch (error) {
-      console.error('Error fetching closed dates:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const addClosedDate = async (e: React.FormEvent) => {
+  const addClosedDateHandler = async (e: React.FormEvent) => {
     e.preventDefault()
-    setSaving(true)
-
-    try {
-      const res = await fetch('/api/settings/closed-dates', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      })
-
-      if (res.ok) {
-        fetchClosedDates()
-        setShowModal(false)
-        setFormData({ date: '', reason: '' })
-      }
-    } catch (error) {
-      console.error('Error adding closed date:', error)
-    } finally {
-      setSaving(false)
-    }
+    await addClosedDate.mutateAsync(formData)
+    setShowModal(false)
+    setFormData({ date: '', reason: '' })
   }
 
-  const deleteClosedDate = async (id: string) => {
+  const deleteClosedDateHandler = async (id: string) => {
     if (!confirm('Bu tatil gününü silmek istediğinize emin misiniz?')) return
-
-    try {
-      const res = await fetch(`/api/settings/closed-dates/${id}`, {
-        method: 'DELETE'
-      })
-
-      if (res.ok) {
-        fetchClosedDates()
-      }
-    } catch (error) {
-      console.error('Error deleting closed date:', error)
-    }
+    await deleteClosedDate.mutateAsync(id)
   }
 
-  if (loading) return <div className="text-center py-20">Yükleniyor...</div>
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <Skeleton className="h-8 w-32" />
+          <Skeleton className="h-10 w-32" />
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="p-4">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-12 w-full mb-2" />
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -103,7 +79,7 @@ export default function ClosedDatesPage() {
                 </td>
               </tr>
             ) : (
-              closedDates.map((item) => (
+              closedDates.map((item: ClosedDate) => (
                 <tr key={item.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 text-sm text-gray-900">
                     {new Date(item.date).toLocaleDateString('tr-TR', {
@@ -115,8 +91,9 @@ export default function ClosedDatesPage() {
                   <td className="px-6 py-4 text-sm text-gray-600">{item.reason || '-'}</td>
                   <td className="px-6 py-4 text-right">
                     <button
-                      onClick={() => deleteClosedDate(item.id)}
-                      className="text-red-600 hover:text-red-900"
+                      onClick={() => deleteClosedDateHandler(item.id)}
+                      disabled={deleteClosedDate.isPending}
+                      className="text-red-600 hover:text-red-900 disabled:opacity-50"
                     >
                       <X className="w-5 h-5" />
                     </button>
@@ -132,7 +109,7 @@ export default function ClosedDatesPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 w-full max-w-md">
             <h2 className="text-xl font-bold text-gray-900 mb-4">Tatil Günü Ekle</h2>
-            <form onSubmit={addClosedDate} className="space-y-4">
+            <form onSubmit={addClosedDateHandler} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Tarih</label>
                 <input
@@ -163,10 +140,10 @@ export default function ClosedDatesPage() {
                 </button>
                 <button
                   type="submit"
-                  disabled={saving}
+                  disabled={addClosedDate.isPending}
                   className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
                 >
-                  {saving ? 'Ekleniyor...' : 'Ekle'}
+                  {addClosedDate.isPending ? 'Ekleniyor...' : 'Ekle'}
                 </button>
               </div>
             </form>

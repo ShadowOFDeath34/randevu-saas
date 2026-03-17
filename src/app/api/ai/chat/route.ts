@@ -1,8 +1,14 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { generateAIResponse, detectLanguage } from '@/lib/ai-chat'
+import { checkIPRateLimit, defaultConfigs, createRateLimitResponse } from '@/lib/rate-limit'
 
 export async function POST(req: Request) {
+  // Rate limiting: 20 requests per minute per IP
+  const rateLimit = await checkIPRateLimit(req, defaultConfigs.ai)
+  if (!rateLimit.success) {
+    return createRateLimitResponse(rateLimit)
+  }
   try {
     const body = await req.json()
     const { message, tenantSlug, customerId } = body

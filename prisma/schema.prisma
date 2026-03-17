@@ -160,6 +160,8 @@ model Staff {
 
   @@unique([tenantId, fullName])
   @@index([tenantId, isActive])
+  @@index([tenantId])
+  @@index([email])
 }
 
 model StaffWorkingHour {
@@ -194,6 +196,7 @@ model Service {
 
   @@unique([tenantId, name])
   @@index([tenantId, isActive])
+  @@index([tenantId])
 }
 
 model StaffService {
@@ -232,6 +235,9 @@ model Customer {
   @@index([tenantId, createdAt])
   @@index([tenantId, customerSegment])
   @@index([tenantId, lastVisitDate])
+  @@index([tenantId, email])
+  @@index([tenantId])
+  @@index([email])
 }
 
 model Booking {
@@ -270,6 +276,8 @@ model Booking {
   @@index([tenantId, status])
   @@index([bookingDate, status])
   @@index([deletedAt])
+  @@index([customerId])
+  @@index([status])
 }
 
 model BookingStatusLog {

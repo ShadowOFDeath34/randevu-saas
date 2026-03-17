@@ -7,8 +7,11 @@ declare module 'iyzipay' {
 
   class Iyzipay {
     constructor(options: IyzipayOptions)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     payment: any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     checkoutFormAuthInitialize: any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     subscription: any
   }
 

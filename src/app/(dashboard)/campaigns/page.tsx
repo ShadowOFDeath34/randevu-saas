@@ -1,8 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Sparkles, Send, Users, Smartphone, Mail, Plus, Clock, FileText, CheckCircle2 } from 'lucide-react'
+import { useCampaigns, useGenerateCampaign, useCreateCampaign, useSendCampaign } from '@/hooks/use-campaigns'
 import { formatDate } from '@/lib/utils'
+import { Skeleton } from '@/components/ui/skeleton'
 
 interface Campaign {
   id: string
@@ -19,97 +21,46 @@ interface Campaign {
 }
 
 export default function CampaignsPage() {
-  const [campaigns, setCampaigns] = useState<Campaign[]>([])
-  const [loading, setLoading] = useState(true)
+  const { data: campaignsData, isLoading } = useCampaigns()
+  const generateCampaign = useGenerateCampaign()
+  const createCampaign = useCreateCampaign()
+  const sendCampaign = useSendCampaign()
+
+  const campaigns = campaignsData?.campaigns || []
+
   const [showForm, setShowForm] = useState(false)
-  
-  // Form State
   const [name, setName] = useState('')
   const [segment, setSegment] = useState('all')
   const [type, setType] = useState('sms')
   const [content, setContent] = useState('')
   const [aiGenerated, setAiGenerated] = useState(false)
-  const [generating, setGenerating] = useState(false)
-  const [saving, setSaving] = useState(false)
-
-  useEffect(() => {
-    fetchCampaigns()
-  }, [])
-
-  const fetchCampaigns = async () => {
-    setLoading(true)
-    try {
-      const res = await fetch('/api/campaigns')
-      const data = await res.json()
-      if (data.campaigns) setCampaigns(data.campaigns)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const handleGenerateAI = async () => {
-    setGenerating(true)
-    try {
-      const res = await fetch('/api/campaigns/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ segment, type })
-      })
-      const data = await res.json()
-      if (data.content) {
-        setContent(data.content)
-        setAiGenerated(true)
-      }
-    } finally {
-      setGenerating(false)
+    const data = await generateCampaign.mutateAsync({ segment, type })
+    if (data.content) {
+      setContent(data.content)
+      setAiGenerated(true)
     }
   }
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
-    setSaving(true)
-    try {
-      const res = await fetch('/api/campaigns', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name,
-          targetSegment: segment,
-          type,
-          content,
-          aiGenerated
-        })
-      })
-      if (res.ok) {
-        setShowForm(false)
-        setName('')
-        setContent('')
-        setAiGenerated(false)
-        fetchCampaigns()
-      }
-    } finally {
-      setSaving(false)
-    }
+    await createCampaign.mutateAsync({
+      name,
+      targetSegment: segment,
+      type,
+      content,
+      aiGenerated
+    })
+    setShowForm(false)
+    setName('')
+    setContent('')
+    setAiGenerated(false)
   }
 
   const handleSend = async (id: string) => {
     if (!confirm('Bu kampanyayı göndermek istediğinize emin misiniz?')) return
-
-    try {
-      const res = await fetch('/api/campaigns/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ campaignId: id })
-      })
-      if (res.ok) {
-        alert('Kampanya başarıyla gönderildi!')
-        fetchCampaigns()
-      } else {
-        alert('Gönderim sırasında hata oluştu.')
-      }
-    } catch (err) {
-      console.error(err)
-    }
+    await sendCampaign.mutateAsync(id)
   }
 
   const segments = [
@@ -118,6 +69,24 @@ export default function CampaignsPage() {
     { id: 'at_risk', label: 'Kayıp Riskli', desc: 'Son 3 aydır gelmeyenler' },
     { id: 'new', label: 'Yeni Müşteriler', desc: 'Sadece 1 kere gelenler' }
   ]
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <Skeleton className="h-8 w-64" />
+          <Skeleton className="h-10 w-32" />
+        </div>
+        <div className="card-premium overflow-hidden">
+          <div className="p-4">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-16 w-full mb-2" />
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -145,8 +114,8 @@ export default function CampaignsPage() {
             <form onSubmit={handleSave} className="space-y-5">
               <div>
                 <label className="block text-sm font-medium text-neutral-600 mb-1.5">Kampanya Adı</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="input-premium"
@@ -177,7 +146,7 @@ export default function CampaignsPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-neutral-600 mb-1.5">Hedef Kitle (Segment)</label>
-                  <select 
+                  <select
                     value={segment}
                     onChange={(e) => setSegment(e.target.value)}
                     className="input-premium"
@@ -190,14 +159,14 @@ export default function CampaignsPage() {
               <div>
                 <div className="flex justify-between items-end mb-2">
                   <label className="block text-sm font-medium text-neutral-600">Mesaj İçeriği</label>
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     onClick={handleGenerateAI}
-                    disabled={generating}
+                    disabled={generateCampaign.isPending}
                     className="text-xs flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white font-medium hover:opacity-90 transition-opacity disabled:opacity-50 shadow-sm"
                   >
                     <Sparkles className="w-3.5 h-3.5" />
-                    {generating ? 'Yazılıyor...' : 'AI ile Metin Üret'}
+                    {generateCampaign.isPending ? 'Yazılıyor...' : 'AI ile Metin Üret'}
                   </button>
                 </div>
                 <textarea
@@ -225,19 +194,19 @@ export default function CampaignsPage() {
               </div>
 
               <div className="flex gap-3 pt-4 border-t border-neutral-100">
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => setShowForm(false)}
                   className="btn-secondary py-2.5 px-6"
                 >
                   İptal
                 </button>
-                <button 
-                  type="submit" 
-                  disabled={saving || !content || !name}
+                <button
+                  type="submit"
+                  disabled={createCampaign.isPending || !content || !name}
                   className="btn-primary py-2.5 px-6 flex-1"
                 >
-                  {saving ? 'Kaydediliyor...' : 'Taslak Olarak Kaydet'}
+                  {createCampaign.isPending ? 'Kaydediliyor...' : 'Taslak Olarak Kaydet'}
                 </button>
               </div>
             </form>
@@ -247,7 +216,7 @@ export default function CampaignsPage() {
           <div className="card-premium bg-gradient-to-br from-neutral-900 to-primary-950 text-white p-6 relative overflow-hidden">
             <div className="absolute inset-0 bg-dot-pattern opacity-10" />
             <div className="absolute top-10 right-10 w-32 h-32 bg-primary-500/20 rounded-full blur-2xl" />
-            
+
             <div className="relative z-10">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 text-primary-200 text-xs font-semibold mb-6 border border-white/10 backdrop-blur-sm">
                 <Users className="w-3.5 h-3.5" />
@@ -267,7 +236,7 @@ export default function CampaignsPage() {
                   Yapay Zeka Ne Diyor?
                 </div>
                 {segment === 'at_risk' && <p className="text-sm text-neutral-300 leading-relaxed">Riskli müşterilere sert indirimler (%20+) veya kısa süreli fırsatlar (FOMO) sunmak onları geri kazanmada en etkili yöntemdir.</p>}
-                {segment === 'loyal' && <p className="text-sm text-neutral-300 leading-relaxed">Sadık müşteriler paraya değil, değerli hissetmeye odaklanır. Onlara "Özel Hediye", "Öncelikli Bakım" veya "VIP" gibi kelimelerle yaklaşın.</p>}
+                {segment === 'loyal' && <p className="text-sm text-neutral-300 leading-relaxed">Sadık müşteriler paraya değil, değerli hissetmeye odaklanır. Onlara &ldquo;Özel Hediye&rdquo;, &ldquo;Öncelikli Bakım&rdquo; veya &ldquo;VIP&rdquo; gibi kelimelerle yaklaşın.</p>}
                 {segment === 'new' && <p className="text-sm text-neutral-300 leading-relaxed">Yeni gelenlerin alışkanlık kazanması için 2. ziyaret teşviki kritiktir. Küçük bir jest veya ufak bir yüzde indirimi bağlayıcılığı %60 artırır.</p>}
                 {segment === 'all' && <p className="text-sm text-neutral-300 leading-relaxed">Tüm kitleye genelleştirilmiş mesajlar atarken, herkesin ilgisini çekecek net, kısa ve eyleme geçirici cümleler (CTA) kullanın.</p>}
               </div>
@@ -298,11 +267,7 @@ export default function CampaignsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100">
-                {loading ? (
-                  <tr>
-                    <td colSpan={6} className="p-8 text-center text-neutral-400 text-sm">Yükleniyor...</td>
-                  </tr>
-                ) : campaigns.length === 0 ? (
+                {campaigns.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="p-12 text-center text-neutral-500">
                       <Sparkles className="w-8 h-8 mx-auto text-neutral-300 mb-3" />
@@ -314,7 +279,7 @@ export default function CampaignsPage() {
                     </td>
                   </tr>
                 ) : (
-                  campaigns.map(campaign => (
+                  campaigns.map((campaign: Campaign) => (
                     <tr key={campaign.id} className="hover:bg-neutral-50/50 transition-colors group">
                       <td className="p-4 pl-6">
                         <div className="flex items-center gap-3">
@@ -356,9 +321,10 @@ export default function CampaignsPage() {
                       </td>
                       <td className="p-4 pr-6 text-right">
                         {campaign.status === 'draft' ? (
-                          <button 
+                          <button
                             onClick={() => handleSend(campaign.id)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary-600 text-white text-xs font-semibold rounded-lg hover:bg-primary-700 hover:shadow-md hover:shadow-primary-600/20 transition-all opacity-0 group-hover:opacity-100"
+                            disabled={sendCampaign.isPending}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary-600 text-white text-xs font-semibold rounded-lg hover:bg-primary-700 hover:shadow-md hover:shadow-primary-600/20 transition-all opacity-0 group-hover:opacity-100 disabled:opacity-50"
                           >
                             <Send className="w-3 h-3" />
                             Gönder

@@ -1,7 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Save, Mail, MessageSquare, Phone, Bell } from 'lucide-react'
+import { useNotificationSettings, useUpdateNotificationSettings } from '@/hooks/use-settings'
+import { Skeleton } from '@/components/ui/skeleton'
 
 interface NotificationSettings {
   emailEnabled: boolean
@@ -15,7 +17,10 @@ interface NotificationSettings {
 }
 
 export default function NotificationSettingsPage() {
-  const [settings, setSettings] = useState<NotificationSettings>({
+  const { data: settings, isLoading } = useNotificationSettings()
+  const updateSettings = useUpdateNotificationSettings()
+
+  const [localSettings, setLocalSettings] = useState<NotificationSettings>({
     emailEnabled: true,
     smsEnabled: false,
     whatsappEnabled: false,
@@ -25,50 +30,23 @@ export default function NotificationSettingsPage() {
     bookingCancellation: true,
     reviewRequest: true
   })
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
-  useEffect(() => {
-    fetchSettings()
-  }, [])
-
-  const fetchSettings = async () => {
-    try {
-      const res = await fetch('/api/settings/notifications')
-      const data = await res.json()
-      if (data) {
-        setSettings({ ...settings, ...data })
-      }
-    } catch (error) {
-      console.error('Error fetching settings:', error)
-    } finally {
-      setLoading(false)
+  // Sync with loaded settings
+  useState(() => {
+    if (settings) {
+      setLocalSettings(prev => ({ ...prev, ...settings }))
     }
-  }
+  })
 
   const saveSettings = async () => {
-    setSaving(true)
-    try {
-      const res = await fetch('/api/settings/notifications', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(settings)
-      })
-
-      if (res.ok) {
-        setSaved(true)
-        setTimeout(() => setSaved(false), 3000)
-      }
-    } catch (error) {
-      console.error('Error saving settings:', error)
-    } finally {
-      setSaving(false)
-    }
+    await updateSettings.mutateAsync(localSettings)
+    setSaved(true)
+    setTimeout(() => setSaved(false), 3000)
   }
 
   const toggleReminderHour = (hour: number) => {
-    setSettings(prev => ({
+    setLocalSettings(prev => ({
       ...prev,
       reminderHours: prev.reminderHours.includes(hour)
         ? prev.reminderHours.filter(h => h !== hour)
@@ -76,7 +54,23 @@ export default function NotificationSettingsPage() {
     }))
   }
 
-  if (loading) return <div className="text-center py-20">Yükleniyor...</div>
+  if (isLoading) {
+    return (
+      <div className="max-w-3xl mx-auto space-y-6">
+        <div className="flex justify-between items-center">
+          <Skeleton className="h-8 w-48" />
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <Skeleton className="h-6 w-48 mb-4" />
+          <div className="space-y-4">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-20 w-full" />
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -91,7 +85,7 @@ export default function NotificationSettingsPage() {
           <Bell className="w-5 h-5" />
           Bildirim Kanalları
         </h2>
-        
+
         <div className="space-y-4">
           <label className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
             <div className="flex items-center gap-3">
@@ -103,8 +97,8 @@ export default function NotificationSettingsPage() {
             </div>
             <input
               type="checkbox"
-              checked={settings.emailEnabled}
-              onChange={(e) => setSettings({ ...settings, emailEnabled: e.target.checked })}
+              checked={localSettings.emailEnabled}
+              onChange={(e) => setLocalSettings({ ...localSettings, emailEnabled: e.target.checked })}
               className="w-5 h-5 rounded text-indigo-600"
             />
           </label>
@@ -119,8 +113,8 @@ export default function NotificationSettingsPage() {
             </div>
             <input
               type="checkbox"
-              checked={settings.whatsappEnabled}
-              onChange={(e) => setSettings({ ...settings, whatsappEnabled: e.target.checked })}
+              checked={localSettings.whatsappEnabled}
+              onChange={(e) => setLocalSettings({ ...localSettings, whatsappEnabled: e.target.checked })}
               className="w-5 h-5 rounded text-indigo-600"
             />
           </label>
@@ -135,8 +129,8 @@ export default function NotificationSettingsPage() {
             </div>
             <input
               type="checkbox"
-              checked={settings.smsEnabled}
-              onChange={(e) => setSettings({ ...settings, smsEnabled: e.target.checked })}
+              checked={localSettings.smsEnabled}
+              onChange={(e) => setLocalSettings({ ...localSettings, smsEnabled: e.target.checked })}
               className="w-5 h-5 rounded text-indigo-600"
             />
           </label>
@@ -147,14 +141,14 @@ export default function NotificationSettingsPage() {
       <div className="bg-white rounded-xl border border-gray-200 p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Otomatik Hatırlatmalar</h2>
         <p className="text-sm text-gray-500 mb-4">Müşterilere randevudan önce otomatik hatırlatma gönderilecek saatler:</p>
-        
+
         <div className="flex flex-wrap gap-2">
           {[48, 24, 12, 6, 2, 1].map(hour => (
             <button
               key={hour}
               onClick={() => toggleReminderHour(hour)}
               className={`px-4 py-2 rounded-lg border-2 transition-colors ${
-                settings.reminderHours.includes(hour)
+                localSettings.reminderHours.includes(hour)
                   ? 'border-indigo-600 bg-indigo-50 text-indigo-600'
                   : 'border-gray-200 text-gray-600 hover:border-gray-300'
               }`}
@@ -168,7 +162,7 @@ export default function NotificationSettingsPage() {
       {/* Bildirim Türleri */}
       <div className="bg-white rounded-xl border border-gray-200 p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Bildirim Türleri</h2>
-        
+
         <div className="space-y-4">
           <label className="flex items-center justify-between">
             <div>
@@ -177,8 +171,8 @@ export default function NotificationSettingsPage() {
             </div>
             <input
               type="checkbox"
-              checked={settings.bookingConfirmation}
-              onChange={(e) => setSettings({ ...settings, bookingConfirmation: e.target.checked })}
+              checked={localSettings.bookingConfirmation}
+              onChange={(e) => setLocalSettings({ ...localSettings, bookingConfirmation: e.target.checked })}
               className="w-5 h-5 rounded text-indigo-600"
             />
           </label>
@@ -190,8 +184,8 @@ export default function NotificationSettingsPage() {
             </div>
             <input
               type="checkbox"
-              checked={settings.bookingReminder}
-              onChange={(e) => setSettings({ ...settings, bookingReminder: e.target.checked })}
+              checked={localSettings.bookingReminder}
+              onChange={(e) => setLocalSettings({ ...localSettings, bookingReminder: e.target.checked })}
               className="w-5 h-5 rounded text-indigo-600"
             />
           </label>
@@ -203,8 +197,8 @@ export default function NotificationSettingsPage() {
             </div>
             <input
               type="checkbox"
-              checked={settings.bookingCancellation}
-              onChange={(e) => setSettings({ ...settings, bookingCancellation: e.target.checked })}
+              checked={localSettings.bookingCancellation}
+              onChange={(e) => setLocalSettings({ ...localSettings, bookingCancellation: e.target.checked })}
               className="w-5 h-5 rounded text-indigo-600"
             />
           </label>
@@ -216,8 +210,8 @@ export default function NotificationSettingsPage() {
             </div>
             <input
               type="checkbox"
-              checked={settings.reviewRequest}
-              onChange={(e) => setSettings({ ...settings, reviewRequest: e.target.checked })}
+              checked={localSettings.reviewRequest}
+              onChange={(e) => setLocalSettings({ ...localSettings, reviewRequest: e.target.checked })}
               className="w-5 h-5 rounded text-indigo-600"
             />
           </label>
@@ -226,11 +220,11 @@ export default function NotificationSettingsPage() {
 
       <button
         onClick={saveSettings}
-        disabled={saving}
+        disabled={updateSettings.isPending}
         className="w-full py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center gap-2"
       >
         <Save className="w-5 h-5" />
-        {saving ? 'Kaydediliyor...' : 'Ayarları Kaydet'}
+        {updateSettings.isPending ? 'Kaydediliyor...' : 'Ayarları Kaydet'}
       </button>
     </div>
   )

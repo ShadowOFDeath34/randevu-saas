@@ -8,7 +8,7 @@ import * as Sentry from '@sentry/nextjs'
 interface ErrorContext {
   userId?: string
   tenantId?: string
-  [key: string]: any
+  [key: string]: unknown
 }
 
 /**

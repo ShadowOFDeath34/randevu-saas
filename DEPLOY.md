@@ -140,6 +140,54 @@ npx prisma generate
 
 ---
 
+## Health Check
+
+Deploy sonrası sağlık kontrolü:
+
+```bash
+curl https://randevuai.com/api/health
+```
+
+Başarılı yanıt:
+```json
+{
+  "status": "ok",
+  "timestamp": "2024-...",
+  "version": "0.1.0",
+  "environment": "production",
+  "checks": {
+    "database": { "status": "healthy", "responseTime": 45 },
+    "memory": { "status": "healthy", "responseTime": 128 },
+    "environment": { "status": "healthy" }
+  }
+}
+```
+
+## CI/CD (GitHub Actions)
+
+`.github/workflows/deploy.yml`:
+
+```yaml
+name: Deploy
+on:
+  push:
+    branches: [main]
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm run test
+      - run: vercel --prod --token=${{ secrets.VERCEL_TOKEN }}
+```
+
+GitHub Secrets:
+- `VERCEL_TOKEN`: Vercel > Settings > Tokens'dan oluşturun
+
 ## Production Checklist
 
 - [ ] Domain alındı
@@ -149,3 +197,5 @@ npx prisma generate
 - [ ] iyzico sandbox test edildi
 - [ ] E-posta gönderimi test edildi
 - [ ] Landing page SEO kontrol edildi
+- [ ] Health check endpoint test edildi
+- [ ] Cron job'lar aktif

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback, memo } from 'react'
 import { Send, Bot, User, X, MessageCircle } from 'lucide-react'
 
 interface Message {
@@ -15,7 +15,7 @@ interface ChatWidgetProps {
   primaryColor?: string
 }
 
-export default function ChatWidget({ tenantSlug, primaryColor = '#4f46e5' }: ChatWidgetProps) {
+function ChatWidget({ tenantSlug, primaryColor = '#4f46e5' }: ChatWidgetProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
@@ -33,13 +33,13 @@ export default function ChatWidget({ tenantSlug, primaryColor = '#4f46e5' }: Cha
         }
       ])
     }
-  }, [isOpen])
+  }, [isOpen, messages.length])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  const sendMessage = async () => {
+  const sendMessage = useCallback(async () => {
     if (!input.trim() || loading) return
 
     const userMessage: Message = {
@@ -84,21 +84,26 @@ export default function ChatWidget({ tenantSlug, primaryColor = '#4f46e5' }: Cha
     } finally {
       setLoading(false)
     }
-  }
+  }, [input, loading, tenantSlug])
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       sendMessage()
     }
-  }
+  }, [sendMessage])
+
+  const toggleOpen = useCallback(() => {
+    setIsOpen(prev => !prev)
+  }, [])
 
   if (!isOpen) {
     return (
       <button
-        onClick={() => setIsOpen(true)}
+        onClick={toggleOpen}
         className="fixed bottom-6 right-6 w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-white transition-all hover:scale-110 z-50"
         style={{ backgroundColor: primaryColor }}
+        aria-label="Chat'i aç"
       >
         <MessageCircle className="w-7 h-7" />
       </button>
@@ -197,3 +202,5 @@ export default function ChatWidget({ tenantSlug, primaryColor = '#4f46e5' }: Cha
     </div>
   )
 }
+
+export default memo(ChatWidget)

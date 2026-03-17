@@ -25,12 +25,12 @@ export function slugify(text: string): string {
  * Kriptografik olarak guvenli onay kodu uretir
  * NOT: Node.js crypto modulunu kullanir
  */
-export function generateConfirmationCode(): string {
+export async function generateConfirmationCode(): Promise<string> {
   // Node.js crypto modulunu dinamik import et (Edge Runtime uyumlulugu icin)
   if (typeof process !== 'undefined' && process.versions?.node) {
     // Node.js ortami
-    const crypto = require('crypto')
-    return crypto.randomBytes(4).toString('hex').toUpperCase()
+    const { randomBytes } = await import('crypto')
+    return randomBytes(4).toString('hex').toUpperCase()
   }
   
   // Fallback: Web Crypto API (Edge Runtime)

@@ -34,7 +34,7 @@ export interface AIChatResponse {
   suggestions?: string[]
   action?: {
     type: 'create_booking' | 'show_services' | 'show_calendar' | 'contact_support'
-    data?: any
+    data?: Record<string, unknown>
   }
 }
 

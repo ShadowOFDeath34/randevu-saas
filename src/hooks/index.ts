@@ -3,3 +3,8 @@ export * from "./use-customers";
 export * from "./use-services";
 export * from "./use-staff";
 export * from "./use-analytics";
+export * from "./use-calendar";
+export * from "./use-settings";
+export * from "./use-campaigns";
+export * from "./use-subscription";
+export * from "./use-reports";

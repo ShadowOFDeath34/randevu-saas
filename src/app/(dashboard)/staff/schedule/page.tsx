@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useStaff } from '@/hooks/use-staff'
+import { Skeleton } from '@/components/ui/skeleton'
 
 interface WorkingHour {
   dayOfWeek: number
@@ -9,52 +11,41 @@ interface WorkingHour {
   isClosed: boolean
 }
 
-interface Staff {
+interface StaffWithHours {
   id: string
-  fullName: string
+  name: string
   workingHours: WorkingHour[]
 }
 
 export default function StaffSchedulePage() {
-  const [staff, setStaff] = useState<Staff[]>([])
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
+  const { data: staff = [], isLoading } = useStaff()
   const [selectedStaff, setSelectedStaff] = useState<string>('')
   const [hours, setHours] = useState<WorkingHour[]>([])
+  const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+
+  // Cast staff to include workingHours (API returns this but hook type doesn't include it)
+  const staffWithHours = staff as unknown as StaffWithHours[]
 
   const dayNames = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi']
 
   useEffect(() => {
-    fetchStaff()
-  }, [])
+    if (staff.length > 0 && !selectedStaff) {
+      setSelectedStaff(staff[0].id)
+    }
+  }, [staff, selectedStaff])
 
   useEffect(() => {
     if (selectedStaff) {
-      const member = staff.find(s => s.id === selectedStaff)
+      const member = staffWithHours.find((s: StaffWithHours) => s.id === selectedStaff)
       if (member) {
         setHours(member.workingHours)
       }
     }
-  }, [selectedStaff, staff])
-
-  const fetchStaff = async () => {
-    try {
-      const res = await fetch('/api/staff')
-      const data = await res.json()
-      setStaff(data)
-      if (data.length > 0) {
-        setSelectedStaff(data[0].id)
-      }
-    } catch (error) {
-      console.error('Error fetching staff:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+  }, [selectedStaff, staffWithHours])
 
   const updateHours = (dayOfWeek: number, field: keyof WorkingHour, value: any) => {
-    setHours(prev => prev.map(h => 
+    setHours(prev => prev.map(h =>
       h.dayOfWeek === dayOfWeek ? { ...h, [field]: value } : h
     ))
   }
@@ -79,8 +70,22 @@ export default function StaffSchedulePage() {
     }
   }
 
-  if (loading) {
-    return <div className="text-center py-20">Yükleniyor...</div>
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <Skeleton className="h-8 w-48" />
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <Skeleton className="h-10 w-64 mb-6" />
+          <div className="space-y-4">
+            {Array.from({ length: 7 }).map((_, i) => (
+              <Skeleton key={i} className="h-14 w-full" />
+            ))}
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -98,8 +103,8 @@ export default function StaffSchedulePage() {
             onChange={(e) => setSelectedStaff(e.target.value)}
             className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-lg"
           >
-            {staff.map(s => (
-              <option key={s.id} value={s.id}>{s.fullName}</option>
+            {staffWithHours.map((s: StaffWithHours) => (
+              <option key={s.id} value={s.id}>{s.name}</option>
             ))}
           </select>
         </div>
@@ -110,7 +115,7 @@ export default function StaffSchedulePage() {
               <div className="w-28 font-medium text-gray-700">
                 {dayNames[hour.dayOfWeek]}
               </div>
-              
+
               <div className="flex items-center gap-4 flex-1">
                 <label className="flex items-center gap-2">
                   <input

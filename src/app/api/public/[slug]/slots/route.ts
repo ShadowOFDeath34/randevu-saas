@@ -1,11 +1,17 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { minutesToTime, timeToMinutes } from '@/lib/utils'
+import { checkIPRateLimit, defaultConfigs, createRateLimitResponse } from '@/lib/rate-limit'
 
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ slug: string }> }
 ) {
+  // Rate limiting: 10 requests per minute per IP
+  const rateLimit = await checkIPRateLimit(req, defaultConfigs.public)
+  if (!rateLimit.success) {
+    return createRateLimitResponse(rateLimit)
+  }
   try {
     const { slug } = await params
     const { searchParams } = new URL(req.url)

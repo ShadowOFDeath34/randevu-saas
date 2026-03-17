@@ -1,92 +1,71 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { 
-  BarChart3, 
-  TrendingUp, 
-  TrendingDown, 
+import { useState } from 'react'
+import { useAnalyticsStats } from '@/hooks/use-analytics'
+import { Skeleton } from '@/components/ui/skeleton'
+import {
+  BarChart3,
+  TrendingUp,
+  TrendingDown,
   Calendar,
   Users,
-  Scissors,
   DollarSign,
   ArrowUp,
-  ArrowDown
 } from 'lucide-react'
 
-interface Stats {
-  totalBookings: number
-  completedBookings: number
-  cancelledBookings: number
-  noShowBookings: number
-  totalRevenue: number
-  totalCustomers: number
-  repeatCustomers: number
-  averageRating: number
-  popularServices: { name: string; count: number }[]
-  topStaff: { name: string; count: number }[]
-  dailyBookings: { date: string; count: number }[]
-  weeklyStats: { day: string; bookings: number; revenue: number }[]
-}
-
 export default function AnalyticsPage() {
-  const [stats, setStats] = useState<Stats | null>(null)
-  const [loading, setLoading] = useState(true)
   const [period, setPeriod] = useState<'week' | 'month' | 'year'>('month')
+  const { data: stats, isLoading, error } = useAnalyticsStats(period)
 
-  useEffect(() => {
-    fetchStats()
-  }, [period])
-
-  const fetchStats = async () => {
-    setLoading(true)
-    try {
-      const res = await fetch(`/api/analytics?period=${period}`)
-      const data = await res.json()
-      setStats(data)
-    } catch (error) {
-      console.error('Error fetching stats:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  if (loading) {
+  if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <Skeleton className="h-8 w-32" />
+          <Skeleton className="h-10 w-64" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-40 rounded-xl" />
+          ))}
+        </div>
+        <div className="grid lg:grid-cols-2 gap-6">
+          <Skeleton className="h-80 rounded-xl" />
+          <Skeleton className="h-80 rounded-xl" />
+        </div>
       </div>
     )
   }
 
-  if (!stats) {
+  if (error || !stats) {
     return (
-      <div className="text-center py-12 text-gray-500">
-        Veri yüklenemedi
+      <div className="text-center py-12 text-red-600">
+        Veri yüklenirken hata oluştu. Lütfen sayfayı yenileyin.
       </div>
     )
   }
 
-  const completionRate = stats.totalBookings > 0 
-    ? Math.round((stats.completedBookings / stats.totalBookings) * 100) 
+  const completionRate = stats.totalBookings > 0
+    ? Math.round((stats.completedBookings / stats.totalBookings) * 100)
     : 0
 
-  const noShowRate = stats.totalBookings > 0 
-    ? Math.round((stats.noShowBookings / stats.totalBookings) * 100) 
+  const noShowRate = stats.totalBookings > 0
+    ? Math.round((stats.noShowBookings / stats.totalBookings) * 100)
     : 0
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-900">İstatistikler</h1>
-        
+
         <div className="flex gap-2">
           {(['week', 'month', 'year'] as const).map((p) => (
             <button
               key={p}
               onClick={() => setPeriod(p)}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                period === p 
-                  ? 'bg-indigo-600 text-white' 
+                period === p
+                  ? 'bg-indigo-600 text-white'
                   : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
               }`}
             >
@@ -185,7 +164,7 @@ export default function AnalyticsPage() {
                     <span className="text-sm text-gray-500">{service.count} randevu</span>
                   </div>
                   <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div 
+                    <div
                       className="h-full bg-indigo-600 rounded-full"
                       style={{ width: `${(service.count / stats.popularServices[0]?.count) * 100}%` }}
                     />
@@ -200,20 +179,20 @@ export default function AnalyticsPage() {
         <div className="bg-white p-6 rounded-xl border border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">En Aktif Personel</h2>
           <div className="space-y-4">
-            {stats.topStaff.slice(0, 5).map((staff, index) => (
-              <div key={staff.name} className="flex items-center gap-4">
+            {stats.topStaff.slice(0, 5).map((staffMember, index) => (
+              <div key={staffMember.name} className="flex items-center gap-4">
                 <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center text-white font-medium">
-                  {staff.name.charAt(0)}
+                  {staffMember.name.charAt(0)}
                 </div>
                 <div className="flex-1">
                   <div className="flex justify-between items-center mb-1">
-                    <span className="font-medium text-gray-900">{staff.name}</span>
-                    <span className="text-sm text-gray-500">{staff.count} randevu</span>
+                    <span className="font-medium text-gray-900">{staffMember.name}</span>
+                    <span className="text-sm text-gray-500">{staffMember.count} randevu</span>
                   </div>
                   <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div 
+                    <div
                       className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full"
-                      style={{ width: `${(staff.count / stats.topStaff[0]?.count) * 100}%` }}
+                      style={{ width: `${(staffMember.count / stats.topStaff[0]?.count) * 100}%` }}
                     />
                   </div>
                 </div>
@@ -231,7 +210,7 @@ export default function AnalyticsPage() {
             <div key={day.day} className="text-center">
               <p className="text-xs text-gray-500 mb-2">{day.day}</p>
               <div className="h-24 flex flex-col justify-end">
-                <div 
+                <div
                   className="bg-indigo-600 rounded-t mx-auto w-full"
                   style={{ height: `${Math.min((day.bookings / 20) * 100, 100)}%`, minHeight: day.bookings > 0 ? '8px' : '0' }}
                 />

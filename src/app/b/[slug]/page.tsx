@@ -1,8 +1,15 @@
 import { notFound } from 'next/navigation'
 import { db } from '@/lib/db'
 import BookingForm from './booking-form'
-import ChatWidget from '@/components/chat-widget'
 import { MapPin, Phone, Clock } from 'lucide-react'
+import { Suspense } from 'react'
+
+// Chat widget'i lazy load ile yükle - performans için
+// Not: Client Component olarak işaretlendiği için ssr: false gerekmez
+import dynamic from 'next/dynamic'
+const ChatWidget = dynamic(() => import('@/components/chat-widget'), {
+  loading: () => null,
+})
 
 interface Props {
   params: Promise<{ slug: string }>
