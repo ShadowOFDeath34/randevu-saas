@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { Prisma } from '@prisma/client'
 
 export async function POST(req: Request) {
   try {
@@ -72,7 +73,7 @@ export async function POST(req: Request) {
 
       // 4. Birincil müşteriyi güncelle (mergeData varsa)
       if (mergeData) {
-        const updateData: any = {}
+        const updateData: Prisma.CustomerUpdateInput = {}
 
         // Hangi alanların korunacağını belirle
         if (mergeData.keepEmail === 'duplicate' && duplicateCustomer.email) {

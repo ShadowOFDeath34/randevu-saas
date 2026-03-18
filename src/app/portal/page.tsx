@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Calendar, Clock, User, Scissors, X, CheckCircle, XCircle } from 'lucide-react'
+import { useState } from 'react'
+import { Calendar, Clock, User, Scissors, CheckCircle, XCircle } from 'lucide-react'
 
 interface Booking {
   id: string
@@ -14,7 +14,7 @@ interface Booking {
 
 export default function PortalPage() {
   const [phone, setPhone] = useState('')
-  const [customer, setCustomer] = useState<any>(null)
+  const [customer, setCustomer] = useState<{ id: string; name: string; phone: string } | null>(null)
   const [bookings, setBookings] = useState<Booking[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -41,7 +41,7 @@ export default function PortalPage() {
       } else {
         setError(data.error || 'Bir hata oluştu')
       }
-    } catch (e) {
+    } catch {
       setError('Bağlantı hatası')
     } finally {
       setLoading(false)
@@ -68,7 +68,7 @@ export default function PortalPage() {
       } else {
         setError(data.error || 'Kod hatalı')
       }
-    } catch (e) {
+    } catch {
       setError('Bağlantı hatası')
     } finally {
       setLoading(false)
@@ -83,11 +83,11 @@ export default function PortalPage() {
         method: 'POST'
       })
       if (res.ok) {
-        setBookings(prev => prev.map(b => 
+        setBookings(prev => prev.map(b =>
           b.id === bookingId ? { ...b, status: 'cancelled' } : b
         ))
       }
-    } catch (e) {
+    } catch {
       alert('İptal sırasında hata oluştu')
     }
   }
@@ -223,7 +223,7 @@ export default function PortalPage() {
               <User className="w-6 h-6 text-indigo-600" />
             </div>
             <div>
-              <h2 className="font-semibold text-gray-900">{customer?.fullName}</h2>
+              <h2 className="font-semibold text-gray-900">{customer?.name}</h2>
               <p className="text-sm text-gray-500">{customer?.phone}</p>
             </div>
           </div>

@@ -43,9 +43,10 @@ export async function PUT(
     })
 
     return NextResponse.json(staff)
-  } catch (error: any) {
-    if (error.name === 'ZodError') {
-      return NextResponse.json({ error: error.errors[0].message }, { status: 400 })
+  } catch (error: unknown) {
+    if (error instanceof Error && error.name === 'ZodError') {
+      const zodError = error as unknown as { errors: { message: string }[] }
+      return NextResponse.json({ error: zodError.errors[0].message }, { status: 400 })
     }
     console.error('Error updating staff:', error)
     return NextResponse.json({ error: 'Error updating staff' }, { status: 500 })

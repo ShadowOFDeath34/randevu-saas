@@ -66,10 +66,11 @@ export async function POST(req: Request) {
         { status: 500 }
       )
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Test email error:', error)
+    const err = error as Error
     return NextResponse.json(
-      { error: error.message || 'Bir hata oluştu' },
+      { error: err.message || 'Bir hata oluştu' },
       { status: 500 }
     )
   }

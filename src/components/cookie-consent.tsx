@@ -49,10 +49,9 @@ export function CookieConsent() {
     // Analytics çerezleri kabul edildiyse
     if (prefs.analytics) {
       // Google Analytics veya benzeri başlat
-      if (typeof window !== 'undefined' && (window as any).gtag) {
-        (window as any).gtag('consent', 'update', {
-          analytics_storage: 'granted',
-        });
+      const win = window as unknown as { gtag?: (...args: string[]) => void }
+      if (typeof window !== 'undefined' && win.gtag) {
+        win.gtag('consent', 'update', 'analytics_storage:granted')
       }
     }
   };

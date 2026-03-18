@@ -58,7 +58,7 @@ export async function POST(req: Request) {
       content: generatedText,
       explanation: `AI, "${segment}" segmenti ve "${type}" kanalı için işletme adınızı kullanarak yüksek dönüşüm (conversion) odaklı bir metin yazdı.`
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error generating AI campaign context:', error)
     return NextResponse.json({ error: 'AI içerik üretemedi' }, { status: 500 })
   }

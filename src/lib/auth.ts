@@ -70,7 +70,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     })
   ],
   callbacks: {
-    async signIn({ user, account, profile }) {
+    async signIn({ user, account, profile: _profile }) {
       // Google OAuth ile giris kontrolu
       if (account?.provider === 'google') {
         if (!user.email) {

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { Prisma } from '@prisma/client'
 
 export async function GET(req: Request) {
   try {
@@ -12,7 +13,7 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url)
     const filter = searchParams.get('filter') || 'all'
 
-    const where: any = {}
+    const where: Prisma.TenantWhereInput = {}
 
     if (filter !== 'all') {
       where.status = filter

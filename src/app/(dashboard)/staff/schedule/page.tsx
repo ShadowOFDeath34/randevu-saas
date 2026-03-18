@@ -44,7 +44,7 @@ export default function StaffSchedulePage() {
     }
   }, [selectedStaff, staffWithHours])
 
-  const updateHours = (dayOfWeek: number, field: keyof WorkingHour, value: any) => {
+  const updateHours = (dayOfWeek: number, field: keyof WorkingHour, value: string | boolean | null) => {
     setHours(prev => prev.map(h =>
       h.dayOfWeek === dayOfWeek ? { ...h, [field]: value } : h
     ))

@@ -102,7 +102,7 @@ export async function POST(req: Request) {
       success: true, 
       sentCount: targetCustomers.length 
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error sending campaign:', error)
     return NextResponse.json({ error: 'Gönderim sırasında hata oluştu' }, { status: 500 })
   }

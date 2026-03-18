@@ -22,8 +22,14 @@ interface Slot {
   staff: { id: string; name: string }[]
 }
 
+interface Tenant {
+  id: string
+  name: string
+  slug: string
+}
+
 interface Props {
-  tenant: any
+  tenant: Tenant
   services: Service[]
   staff: Staff[]
   dates: string[]
@@ -80,8 +86,8 @@ export default function BookingForm({ tenant, services, staff, dates }: Props) {
       if (data.slots) {
         setSlots(data.slots)
       }
-    } catch (err) {
-      console.error('Error fetching slots:', err)
+    } catch (_err) {
+      console.error('Error fetching slots:', _err)
     } finally {
       setLoading(false)
     }
@@ -122,7 +128,7 @@ export default function BookingForm({ tenant, services, staff, dates }: Props) {
 
       setConfirmationCode(data.confirmationCode)
       setSuccess(true)
-    } catch (err) {
+    } catch {
       setError('Bir hata oluştu')
     } finally {
       setSubmitting(false)

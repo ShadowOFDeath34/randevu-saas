@@ -2,7 +2,8 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { Calendar, Clock, Scissors, User, X, CheckCircle, AlertCircle } from 'lucide-react'
+import Link from 'next/link'
+import { Calendar, Clock, User, X, AlertCircle } from 'lucide-react'
 
 interface Booking {
   id: string
@@ -38,7 +39,7 @@ function PortalBookingsContent() {
       if (!res.ok) throw new Error('Failed to fetch')
       const data = await res.json()
       setBookings(data)
-    } catch (err) {
+    } catch {
       setError('Randevularınız yüklenirken bir hata oluştu')
     } finally {
       setLoading(false)
@@ -63,7 +64,7 @@ function PortalBookingsContent() {
       } else {
         throw new Error('Cancel failed')
       }
-    } catch (err) {
+    } catch {
       alert('İptal işlemi başarısız oldu')
     } finally {
       setCancellingId(null)
@@ -146,12 +147,12 @@ function PortalBookingsContent() {
             <p className="text-gray-600 mb-6">
               Bu telefon numarası ile kayıtlı bir randevu bulunamadı.
             </p>
-            <a
+            <Link
               href="/"
               className="inline-flex items-center justify-center px-6 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors"
             >
               Yeni Randevu Al
-            </a>
+            </Link>
           </div>
         ) : (
           <div className="space-y-4">

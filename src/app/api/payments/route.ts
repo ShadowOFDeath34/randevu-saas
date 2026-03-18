@@ -42,9 +42,9 @@ export async function POST(req: Request) {
         country: customerInfo.country || 'Türkiye',
         address: customerInfo.address
       }
-    }) as any
+    }) as { status?: string; paymentStatus?: string; checkoutFormContent?: string; token?: string; paymentPageUrl?: string }
 
-    if (!isPaymentSuccess(result)) {
+    if (!isPaymentSuccess(result as { status?: string; paymentStatus?: string })) {
       return NextResponse.json(
         { error: 'Payment initialization failed', details: result },
         { status: 400 }
@@ -68,10 +68,11 @@ export async function POST(req: Request) {
       token: result.token,
       paymentPageUrl: result.paymentPageUrl
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Payment creation error:', error)
+    const err = error as Error
     return NextResponse.json(
-      { error: 'Failed to create payment', message: error.message },
+      { error: 'Failed to create payment', message: err.message },
       { status: 500 }
     )
   }

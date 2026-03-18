@@ -45,7 +45,7 @@ describe('useServices', () => {
       },
     ]
 
-    ;(fetch as any).mockResolvedValueOnce({
+    ;(fetch as unknown as { mockResolvedValueOnce: (value: { ok: boolean; json: () => Promise<typeof mockServices> }) => void }).mockResolvedValueOnce({
       ok: true,
       json: async () => mockServices,
     })
@@ -59,7 +59,7 @@ describe('useServices', () => {
   })
 
   it('should handle fetch error', async () => {
-    ;(fetch as any).mockResolvedValueOnce({
+    ;(fetch as unknown as { mockResolvedValueOnce: (value: { ok: boolean }) => void }).mockResolvedValueOnce({
       ok: false,
     })
 
@@ -75,7 +75,7 @@ describe('useServices', () => {
 describe('useCreateService', () => {
   it('should create service successfully', async () => {
     const mockResponse = { id: '3', name: 'Yeni Hizmet', duration: 45, price: 200 }
-    ;(fetch as any).mockResolvedValueOnce({
+    ;(fetch as unknown as { mockResolvedValueOnce: (value: { ok: boolean; json: () => Promise<typeof mockResponse> }) => void }).mockResolvedValueOnce({
       ok: true,
       json: async () => mockResponse,
     })

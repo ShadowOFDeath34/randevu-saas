@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { Prisma } from '@prisma/client'
 
 export async function GET(req: Request) {
   try {
@@ -16,7 +17,7 @@ export async function GET(req: Request) {
 
     const skip = (page - 1) * limit
 
-    const where: any = {
+    const where: Prisma.BookingWhereInput = {
       deletedAt: { not: null }
     }
 

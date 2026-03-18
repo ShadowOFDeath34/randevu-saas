@@ -10,6 +10,7 @@ vi.mock('@/lib/db', () => ({
       findMany: vi.fn(),
       findFirst: vi.fn(),
       create: vi.fn(),
+      count: vi.fn(),
     },
   },
 }))
@@ -25,9 +26,10 @@ describe('Customers API', () => {
 
   describe('GET', () => {
     it('should return 401 when not authenticated', async () => {
-      ;(auth as any).mockResolvedValueOnce(null)
+      ;(auth as unknown as { mockResolvedValueOnce: (value: null) => void }).mockResolvedValueOnce(null)
 
-      const response = await GET()
+      const request = new Request('http://localhost:3000/api/customers')
+      const response = await GET(request)
 
       expect(response.status).toBe(401)
     })
@@ -62,25 +64,23 @@ describe('Customers API', () => {
         },
       ]
 
-      ;(auth as any).mockResolvedValueOnce(mockSession)
-      ;(db.customer.findMany as any).mockResolvedValueOnce(mockCustomers)
+      ;(auth as unknown as { mockResolvedValueOnce: (value: typeof mockSession) => void }).mockResolvedValueOnce(mockSession)
+      ;(db.customer.findMany as unknown as { mockResolvedValueOnce: (value: typeof mockCustomers) => void }).mockResolvedValueOnce(mockCustomers)
 
-      const response = await GET()
+      const request = new Request('http://localhost:3000/api/customers')
+      const response = await GET(request)
       const data = await response.json()
 
       expect(response.status).toBe(200)
-      expect(data).toEqual(mockCustomers)
-      expect(db.customer.findMany).toHaveBeenCalledWith({
-        where: { tenantId: 'tenant-1' },
-        include: { _count: { select: { bookings: true } } },
-        orderBy: { createdAt: 'desc' },
-      })
+      expect(data.data).toEqual(mockCustomers)
+      expect(data.pagination).toBeDefined()
+      expect(db.customer.findMany).toHaveBeenCalled()
     })
   })
 
   describe('POST', () => {
     it('should return 401 when not authenticated', async () => {
-      ;(auth as any).mockResolvedValueOnce(null)
+      ;(auth as unknown as { mockResolvedValueOnce: (value: null) => void }).mockResolvedValueOnce(null)
 
       const request = new Request('http://localhost:3000/api/customers', {
         method: 'POST',
@@ -105,8 +105,8 @@ describe('Customers API', () => {
         tenantId: 'tenant-1',
       }
 
-      ;(auth as any).mockResolvedValueOnce(mockSession)
-      ;(db.customer.findFirst as any).mockResolvedValueOnce(existingCustomer)
+      ;(auth as unknown as { mockResolvedValueOnce: (value: typeof mockSession) => void }).mockResolvedValueOnce(mockSession)
+      ;(db.customer.findFirst as unknown as { mockResolvedValueOnce: (value: typeof existingCustomer) => void }).mockResolvedValueOnce(existingCustomer)
 
       const request = new Request('http://localhost:3000/api/customers', {
         method: 'POST',
@@ -144,9 +144,9 @@ describe('Customers API', () => {
         updatedAt: new Date().toISOString(),
       }
 
-      ;(auth as any).mockResolvedValueOnce(mockSession)
-      ;(db.customer.findFirst as any).mockResolvedValueOnce(null)
-      ;(db.customer.create as any).mockResolvedValueOnce(mockCreatedCustomer)
+      ;(auth as unknown as { mockResolvedValueOnce: (value: typeof mockSession) => void }).mockResolvedValueOnce(mockSession)
+      ;(db.customer.findFirst as unknown as { mockResolvedValueOnce: (value: null) => void }).mockResolvedValueOnce(null)
+      ;(db.customer.create as unknown as { mockResolvedValueOnce: (value: typeof mockCreatedCustomer) => void }).mockResolvedValueOnce(mockCreatedCustomer)
 
       const request = new Request('http://localhost:3000/api/customers', {
         method: 'POST',

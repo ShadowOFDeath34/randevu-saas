@@ -74,7 +74,7 @@ export async function POST(req: Request) {
       success: true,
       message: `Hoş geldiniz, ${customer.fullName}! İşleminizi onayladık, lütfen bekleme salonuna geçiniz.`
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Kiosk check-in error:', error)
     return NextResponse.json({ error: 'Bir hata oluştu, lütfen personele başvurun.' }, { status: 500 })
   }

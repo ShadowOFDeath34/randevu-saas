@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { Prisma, BookingStatus } from '@prisma/client'
 import { sendSMS } from '@/lib/sms'
 import { sendBookingConfirmationEmail } from '@/lib/email'
 
@@ -21,10 +22,10 @@ export async function GET(req: Request) {
     const validatedLimit = Math.min(100, Math.max(1, limit)) // Max 100 items per page
     const skip = (validatedPage - 1) * validatedLimit
 
-    const where: any = { tenantId: session.user.tenantId }
+    const where: Prisma.BookingWhereInput = { tenantId: session.user.tenantId }
 
     if (filter !== 'all') {
-      where.status = filter
+      where.status = filter as BookingStatus
     }
 
     // Run count and fetch in parallel for better performance
@@ -215,9 +216,10 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json(booking)
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating booking:', error)
-    if (error.message === 'BU_SAAT_DOLU') {
+    const err = error as Error
+    if (err.message === 'BU_SAAT_DOLU') {
       return NextResponse.json({ error: 'Bu saat dilimi maalesef az önce doldu.' }, { status: 400 })
     }
     return NextResponse.json({ error: 'Error creating booking' }, { status: 500 })

@@ -46,7 +46,7 @@ export async function GET(
   }
 }
 
-// PATCH - Booking güncelle (status)
+// PATCH - Booking güncelle (status veya tam düzenleme)
 export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -59,61 +59,192 @@ export async function PATCH(
 
     const { id } = await params
     const body = await req.json()
-    const { status } = body
+    const { status, serviceId, staffId, bookingDate, startTime, notes } = body
 
     const existingBooking = await db.booking.findFirst({
-      where: { id, tenantId: session.user.tenantId, deletedAt: null }
+      where: { id, tenantId: session.user.tenantId, deletedAt: null },
+      include: { customer: true, service: true, staff: true }
     })
 
     if (!existingBooking) {
       return NextResponse.json({ error: 'Booking not found' }, { status: 404 })
     }
 
-    const booking = await db.booking.update({
-      where: { id },
-      data: { status }
-    })
+    // Sadece status güncellemesi
+    if (status && !serviceId && !staffId && !bookingDate && !startTime) {
+      const booking = await db.booking.update({
+        where: { id },
+        data: { status }
+      })
 
-    await db.bookingStatusLog.create({
-      data: {
-        tenantId: session.user.tenantId,
-        bookingId: id,
-        oldStatus: existingBooking.status as BookingStatus,
-        newStatus: status as BookingStatus,
-        changedByUserId: session.user.id
+      await db.bookingStatusLog.create({
+        data: {
+          tenantId: session.user.tenantId,
+          bookingId: id,
+          oldStatus: existingBooking.status as BookingStatus,
+          newStatus: status as BookingStatus,
+          changedByUserId: session.user.id
+        }
+      })
+
+      // Müşteriye durum güncellemesi bildirimi
+      if (existingBooking.customer?.phone && ['confirmed', 'cancelled'].includes(status)) {
+        const message = status === 'confirmed'
+          ? `Merhaba ${existingBooking.customer.fullName}, ${existingBooking.bookingDate} ${existingBooking.startTime} tarihli randevunuz onaylandi. Bizi tercih ettiginiz icin tesekkurler!`
+          : `Merhaba ${existingBooking.customer.fullName}, ${existingBooking.bookingDate} ${existingBooking.startTime} tarihli randevunuz iptal edildi. Daha fazla bilgi icin bizi arayabilirsiniz.`
+
+        sendSMS({
+          phone: existingBooking.customer.phone,
+          message,
+          tenantId: session.user.tenantId,
+          bookingId: id
+        }).catch(err => console.error('Status SMS sending failed:', err))
       }
+
+      if (existingBooking.customer?.email && ['confirmed', 'cancelled'].includes(status)) {
+        sendBookingStatusEmail(existingBooking.customer.email, {
+          customerName: existingBooking.customer.fullName,
+          status: status as BookingStatus,
+          bookingDate: existingBooking.bookingDate,
+          bookingTime: existingBooking.startTime
+        }).catch(err => console.error('Status email sending failed:', err))
+      }
+
+      return NextResponse.json(booking)
+    }
+
+    // Tam randevu düzenleme (tarih, saat, personel, hizmet değişikliği)
+    const updateData: Record<string, string | null> = {}
+    if (notes !== undefined) updateData.notes = notes
+
+    // Yeni değerleri belirle (değişmemişse mevcut değerleri kullan)
+    const newServiceId = serviceId || existingBooking.serviceId
+    const newStaffId = staffId || existingBooking.staffId
+    const newBookingDate = bookingDate || existingBooking.bookingDate
+    const newStartTime = startTime || existingBooking.startTime
+
+    // Servis bilgilerini al (süre hesaplaması için)
+    const service = await db.service.findFirst({
+      where: { id: newServiceId, tenantId: session.user.tenantId }
     })
 
-    // Müşteriye durum güncellemesi bildirimi (async, blocking değil)
-    const customer = await db.customer.findUnique({
-      where: { id: existingBooking.customerId }
+    if (!service) {
+      return NextResponse.json({ error: 'Service not found' }, { status: 404 })
+    }
+
+    // Bitiş saatini hesapla
+    const startMinutes = parseInt(newStartTime.split(':')[0]) * 60 + parseInt(newStartTime.split(':')[1])
+    const endMinutes = startMinutes + service.durationMinutes
+    const newEndTime = `${Math.floor(endMinutes / 60).toString().padStart(2, '0')}:${(endMinutes % 60).toString().padStart(2, '0')}`
+
+    // Geçmiş tarih kontrolü
+    const bookingDateTime = new Date(`${newBookingDate}T${newStartTime}:00`)
+    if (bookingDateTime < new Date()) {
+      return NextResponse.json({ error: 'Geçmiş tarihe randevu alınamaz' }, { status: 400 })
+    }
+
+    // Transaction ile çakışma kontrolü ve güncelleme
+    const updatedBooking = await db.$transaction(async (tx) => {
+      // Çakışma kontrolü (kendi dışındaki randevularla)
+      const conflictingBooking = await tx.booking.findFirst({
+        where: {
+          tenantId: session.user.tenantId,
+          staffId: newStaffId,
+          bookingDate: newBookingDate,
+          id: { not: id }, // Kendisi hariç
+          status: { notIn: ['cancelled'] },
+          deletedAt: null,
+          OR: [
+            { startTime: { lte: newStartTime }, endTime: { gt: newStartTime } },
+            { startTime: { lt: newEndTime }, endTime: { gte: newEndTime } },
+            { startTime: { gte: newStartTime }, endTime: { lte: newEndTime } }
+          ]
+        }
+      })
+
+      if (conflictingBooking) {
+        throw new Error('BU_SAAT_DOLU')
+      }
+
+      // Randevuyu güncelle
+      const booking = await tx.booking.update({
+        where: { id },
+        data: {
+          serviceId: newServiceId,
+          staffId: newStaffId,
+          bookingDate: newBookingDate,
+          startTime: newStartTime,
+          endTime: newEndTime,
+          notes: notes !== undefined ? notes : existingBooking.notes,
+          status: status || existingBooking.status
+        },
+        include: {
+          customer: true,
+          service: true,
+          staff: true
+        }
+      })
+
+      // Audit log oluştur
+      await tx.auditLog.create({
+        data: {
+          tenantId: session.user.tenantId,
+          actorUserId: session.user.id,
+          action: 'BOOKING_EDIT',
+          entityType: 'Booking',
+          entityId: id,
+          metadataJson: JSON.stringify({
+            oldData: {
+              serviceId: existingBooking.serviceId,
+              staffId: existingBooking.staffId,
+              bookingDate: existingBooking.bookingDate,
+              startTime: existingBooking.startTime,
+              endTime: existingBooking.endTime,
+              notes: existingBooking.notes
+            },
+            newData: {
+              serviceId: newServiceId,
+              staffId: newStaffId,
+              bookingDate: newBookingDate,
+              startTime: newStartTime,
+              endTime: newEndTime,
+              notes: notes !== undefined ? notes : existingBooking.notes
+            }
+          })
+        }
+      })
+
+      return booking
+    }, {
+      maxWait: 5000,
+      timeout: 10000,
+      isolationLevel: 'Serializable'
     })
 
-    if (customer?.phone && ['confirmed', 'cancelled'].includes(status)) {
-      const message = status === 'confirmed'
-        ? `Merhaba ${customer.fullName}, ${existingBooking.bookingDate} ${existingBooking.startTime} tarihli randevunuz onaylandi. Bizi tercih ettiginiz icin tesekkurler!`
-        : `Merhaba ${customer.fullName}, ${existingBooking.bookingDate} ${existingBooking.startTime} tarihli randevunuz iptal edildi. Daha fazla bilgi icin bizi arayabilirsiniz.`
+    // Müşteriye değişiklik bildirimi (eğer önemli değişiklikler varsa)
+    const hasMajorChanges =
+      newBookingDate !== existingBooking.bookingDate ||
+      newStartTime !== existingBooking.startTime ||
+      newStaffId !== existingBooking.staffId
+
+    if (hasMajorChanges && updatedBooking.customer?.phone) {
+      const message = `Merhaba ${updatedBooking.customer.fullName}, randevunuz guncellendi. Yeni bilgiler: ${newBookingDate} ${newStartTime}, ${updatedBooking.staff.fullName}. Bizi tercih ettiginiz icin tesekkurler!`
 
       sendSMS({
-        phone: customer.phone,
+        phone: updatedBooking.customer.phone,
         message,
         tenantId: session.user.tenantId,
         bookingId: id
-      }).catch(err => console.error('Status SMS sending failed:', err))
+      }).catch(err => console.error('Update SMS sending failed:', err))
     }
 
-    if (customer?.email && ['confirmed', 'cancelled'].includes(status)) {
-      sendBookingStatusEmail(customer.email, {
-        customerName: customer.fullName,
-        status: status as BookingStatus,
-        bookingDate: existingBooking.bookingDate,
-        bookingTime: existingBooking.startTime
-      }).catch(err => console.error('Status email sending failed:', err))
-    }
-
-    return NextResponse.json(booking)
-  } catch (error) {
+    return NextResponse.json(updatedBooking)
+  } catch (error: unknown) {
     console.error('Error updating booking:', error)
+    const err = error as Error
+    if (err.message === 'BU_SAAT_DOLU') {
+      return NextResponse.json({ error: 'Bu saat dilimi maalesef dolu. Lütfen başka bir saat seçin.' }, { status: 409 })
+    }
     return NextResponse.json({ error: 'Error updating booking' }, { status: 500 })
   }
 }

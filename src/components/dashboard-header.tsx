@@ -15,7 +15,7 @@ interface DashboardHeaderProps {
 export function DashboardHeader({
   businessName,
   tenantSlug,
-  userRole
+  userRole: _userRole
 }: DashboardHeaderProps) {
 
   return (

@@ -30,7 +30,7 @@ describe('Staff API', () => {
 
   describe('GET', () => {
     it('should return 401 when not authenticated', async () => {
-      ;(auth as any).mockResolvedValueOnce(null)
+      ;(auth as unknown as { mockResolvedValueOnce: (value: null) => void }).mockResolvedValueOnce(null)
 
       const response = await GET()
 
@@ -59,8 +59,8 @@ describe('Staff API', () => {
         },
       ]
 
-      ;(auth as any).mockResolvedValueOnce(mockSession)
-      ;(db.staff.findMany as any).mockResolvedValueOnce(mockStaff)
+      ;(auth as unknown as { mockResolvedValueOnce: (value: typeof mockSession) => void }).mockResolvedValueOnce(mockSession)
+      ;(db.staff.findMany as unknown as { mockResolvedValueOnce: (value: typeof mockStaff) => void }).mockResolvedValueOnce(mockStaff)
 
       const response = await GET()
       const data = await response.json()
@@ -77,7 +77,7 @@ describe('Staff API', () => {
 
   describe('POST', () => {
     it('should return 401 when not authenticated', async () => {
-      ;(auth as any).mockResolvedValueOnce(null)
+      ;(auth as unknown as { mockResolvedValueOnce: (value: null) => void }).mockResolvedValueOnce(null)
 
       const request = new Request('http://localhost:3000/api/staff', {
         method: 'POST',
@@ -116,8 +116,8 @@ describe('Staff API', () => {
         updatedAt: new Date().toISOString(),
       }
 
-      ;(auth as any).mockResolvedValueOnce(mockSession)
-      ;(db.staff.create as any).mockResolvedValueOnce(mockCreatedStaff)
+      ;(auth as unknown as { mockResolvedValueOnce: (value: typeof mockSession) => void }).mockResolvedValueOnce(mockSession)
+      ;(db.staff.create as unknown as { mockResolvedValueOnce: (value: typeof mockCreatedStaff) => void }).mockResolvedValueOnce(mockCreatedStaff)
 
       const request = new Request('http://localhost:3000/api/staff', {
         method: 'POST',

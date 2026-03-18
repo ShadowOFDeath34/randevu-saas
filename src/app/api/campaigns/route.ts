@@ -18,7 +18,7 @@ export async function GET(req: Request) {
     })
 
     return NextResponse.json({ campaigns })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching campaigns:', error)
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
@@ -50,7 +50,7 @@ export async function POST(req: Request) {
     })
 
     return NextResponse.json({ campaign }, { status: 201 })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating campaign:', error)
     return NextResponse.json({ error: 'Kampanya oluşturulamadı' }, { status: 500 })
   }

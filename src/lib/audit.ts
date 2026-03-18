@@ -1,4 +1,5 @@
 import { db } from '@/lib/db'
+import { Prisma } from '@prisma/client'
 
 export type AuditAction = 
   | 'tenant_created'
@@ -72,7 +73,7 @@ export async function getAuditLogs(tenantId: string, options?: {
   limit?: number
 }) {
   try {
-    const where: any = { tenantId }
+    const where: Prisma.AuditLogWhereInput = { tenantId }
 
     if (options?.entityType) {
       where.entityType = options.entityType

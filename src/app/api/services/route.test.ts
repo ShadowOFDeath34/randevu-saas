@@ -30,7 +30,7 @@ describe('Services API', () => {
 
   describe('GET', () => {
     it('should return 401 when not authenticated', async () => {
-      ;(auth as any).mockResolvedValueOnce(null)
+      ;(auth as unknown as { mockResolvedValueOnce: (value: null) => void }).mockResolvedValueOnce(null)
 
       const response = await GET()
 
@@ -65,8 +65,8 @@ describe('Services API', () => {
         },
       ]
 
-      ;(auth as any).mockResolvedValueOnce(mockSession)
-      ;(db.service.findMany as any).mockResolvedValueOnce(mockServices)
+      ;(auth as unknown as { mockResolvedValueOnce: (value: typeof mockSession) => void }).mockResolvedValueOnce(mockSession)
+      ;(db.service.findMany as unknown as { mockResolvedValueOnce: (value: typeof mockServices) => void }).mockResolvedValueOnce(mockServices)
 
       const response = await GET()
       const data = await response.json()
@@ -86,8 +86,8 @@ describe('Services API', () => {
         },
       }
 
-      ;(auth as any).mockResolvedValueOnce(mockSession)
-      ;(db.service.findMany as any).mockRejectedValueOnce(new Error('DB Error'))
+      ;(auth as unknown as { mockResolvedValueOnce: (value: typeof mockSession) => void }).mockResolvedValueOnce(mockSession)
+      ;(db.service.findMany as unknown as { mockRejectedValueOnce: (error: Error) => void }).mockRejectedValueOnce(new Error('DB Error'))
 
       const response = await GET()
 
@@ -97,7 +97,7 @@ describe('Services API', () => {
 
   describe('POST', () => {
     it('should return 401 when not authenticated', async () => {
-      ;(auth as any).mockResolvedValueOnce(null)
+      ;(auth as unknown as { mockResolvedValueOnce: (value: null) => void }).mockResolvedValueOnce(null)
 
       const request = new Request('http://localhost:3000/api/services', {
         method: 'POST',
@@ -129,8 +129,8 @@ describe('Services API', () => {
         updatedAt: new Date().toISOString(),
       }
 
-      ;(auth as any).mockResolvedValueOnce(mockSession)
-      ;(db.service.create as any).mockResolvedValueOnce(mockCreatedService)
+      ;(auth as unknown as { mockResolvedValueOnce: (value: typeof mockSession) => void }).mockResolvedValueOnce(mockSession)
+      ;(db.service.create as unknown as { mockResolvedValueOnce: (value: typeof mockCreatedService) => void }).mockResolvedValueOnce(mockCreatedService)
 
       const request = new Request('http://localhost:3000/api/services', {
         method: 'POST',

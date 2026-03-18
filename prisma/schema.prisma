@@ -119,6 +119,14 @@ model BusinessProfile {
   logoUrl      String?
   bookingSlug  String   @unique
   timezone     String   @default("Europe/Istanbul")
+
+  // Randevu ayarları
+  bufferTimeMinutes      Int     @default(0)      // Randevular arası hazırlık süresi (dakika)
+  cancellationPolicyHours Int    @default(24)     // İptal için minimum önceden bildirim (saat)
+  allowOnlineBooking     Boolean @default(true)     // Online randevu alınabilir mi?
+  maxAdvanceBookingDays  Int     @default(30)      // Maksimum kaç gün sonrasına randevu alınabilir
+  minAdvanceBookingHours Int     @default(1)       // Minimum kaç saat önceden randevu alınabilir
+
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

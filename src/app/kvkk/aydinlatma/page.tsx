@@ -20,7 +20,7 @@ export default function KVKKAydinlatmaPage() {
                 1. Veri Sorumlusu
               </h2>
               <p className="text-gray-600 leading-relaxed">
-                Bu aydınlatma metni, 6698 sayılı Kişisel Verilerin Korunması Kanunu ("KVKK")
+                Bu aydınlatma metni, 6698 sayılı Kişisel Verilerin Korunması Kanunu (&quot;KVKK&quot;)
                 uyarınca, RandevuAI olarak kişisel verilerinizin işlenmesi hakkında sizi
                 bilgilendirmek amacıyla hazırlanmıştır.
               </p>
@@ -83,17 +83,17 @@ export default function KVKKAydinlatmaPage() {
                 5. Kişisel Veri Sahibinin Hakları
               </h2>
               <p className="text-gray-600 leading-relaxed mb-4">
-                KVKK'nın 11. maddesi uyarınca aşağıdaki haklara sahipsiniz:
+                KVKK&apos;nın 11. maddesi uyarınca aşağıdaki haklara sahipsiniz:
               </p>
               <ul className="list-disc list-inside text-gray-600 space-y-2 ml-4">
                 <li>Kişisel verilerinizin işlenip işlenmediğini öğrenme</li>
                 <li>Kişisel verileriniz işlenmişse buna ilişkin bilgi talep etme</li>
                 <li>Kişisel verilerinizin işlenme amacını ve bunların amacına uygun kullanılıp kullanılmadığını öğrenme</li>
                 <li>Yurt içinde veya yurt dışında kişisel verilerinizin aktarıldığı üçüncü kişileri bilme</li>
-                <li>Kişisel verilerinizin eksik veya yanlış işlenmiş olması hâlinde bunların düzeltilmesini isteme</li>
+                <li>Kişisel verilerinizin eksik veya yanlış işlenmiş olması halinde bunların düzeltilmesini isteme</li>
                 <li>Kişisel verilerinizin silinmesini veya yok edilmesini isteme</li>
                 <li>İşlenen verilerinizin münhasıran otomatik sistemler vasıtasıyla analiz edilmesi suretiyle aleyhinize bir sonucun ortaya çıkmasına itiraz etme</li>
-                <li>Kişisel verilerinizin kanuna aykırı işlenmesi sebebiyle zarara uğramanız hâlinde zararın giderilmesini talep etme</li>
+                <li>Kişisel verilerinizin kanuna aykırı işlenmesi sebebiyle zarara uğramanız halinde zararın giderilmesini talep etme</li>
               </ul>
             </section>
 

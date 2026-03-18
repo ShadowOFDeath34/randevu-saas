@@ -59,7 +59,7 @@ export default function RegisterPage() {
         router.push('/dashboard')
         router.refresh()
       }
-    } catch (err) {
+    } catch {
       setError('Bir hata oluştu')
     } finally {
       setLoading(false)
@@ -260,7 +260,7 @@ export default function RegisterPage() {
             <Link href="#" className="underline hover:text-neutral-600 transition-colors">Kullanım Şartları</Link>
             {' '}ve{' '}
             <Link href="#" className="underline hover:text-neutral-600 transition-colors">Gizlilik Politikası</Link>
-            'nı kabul etmiş olursunuz.
+            &apos;nı kabul etmiş olursunuz.
           </p>
         </div>
       </div>

@@ -125,6 +125,7 @@ function escapeHtml(text: string | null | undefined): string {
 /**
  * URL validasyonu - sadece http/https URL'lerine izin ver
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function sanitizeUrl(url: string | null | undefined): string {
   if (!url) return '#'
   

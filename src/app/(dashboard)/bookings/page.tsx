@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { formatDate } from '@/lib/utils'
 import { useBookings, useUpdateBooking } from '@/hooks/use-bookings'
 import { Skeleton } from '@/components/ui/skeleton'
+import { BookingEditDialog } from '@/components/booking-edit-dialog'
 import { BookingStatus } from '@prisma/client'
 
 interface BookingView {
@@ -14,14 +15,16 @@ interface BookingView {
   status: string
   notes: string | null
   confirmationCode: string
-  service: { name: string }
-  customer: { fullName: string; phone: string }
-  staff: { fullName: string }
+  service: { id: string; name: string; durationMinutes: number }
+  customer: { id: string; fullName: string; phone: string }
+  staff: { id: string; fullName: string }
 }
 
 export default function BookingsPage() {
   const [filter, setFilter] = useState('all')
   const [search, setSearch] = useState('')
+  const [editingBooking, setEditingBooking] = useState<BookingView | null>(null)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
 
   const { data: bookings = [], isLoading, error } = useBookings(
     filter !== 'all' ? { status: filter as BookingStatus } : undefined
@@ -30,6 +33,16 @@ export default function BookingsPage() {
 
   const updateStatus = async (id: string, status: string) => {
     updateMutation.mutate({ id, data: { status: status as BookingStatus } })
+  }
+
+  const handleEdit = (booking: BookingView) => {
+    setEditingBooking(booking)
+    setIsEditDialogOpen(true)
+  }
+
+  const handleCloseEdit = () => {
+    setIsEditDialogOpen(false)
+    setEditingBooking(null)
   }
 
   const filteredBookings = (bookings as unknown as BookingView[]).filter((b) =>
@@ -146,18 +159,27 @@ export default function BookingsPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <select
-                      value={booking.status}
-                      onChange={(e) => updateStatus(booking.id, e.target.value)}
-                      disabled={updateMutation.isPending}
-                      className="text-sm border border-gray-300 rounded px-2 py-1 disabled:opacity-50"
-                    >
-                      <option value="pending">Bekliyor</option>
-                      <option value="confirmed">Onaylandı</option>
-                      <option value="completed">Tamamlandı</option>
-                      <option value="cancelled">İptal</option>
-                      <option value="no_show">Gelmedi</option>
-                    </select>
+                    <div className="flex items-center justify-end gap-2">
+                      <select
+                        value={booking.status}
+                        onChange={(e) => updateStatus(booking.id, e.target.value)}
+                        disabled={updateMutation.isPending}
+                        className="text-sm border border-gray-300 rounded px-2 py-1 disabled:opacity-50"
+                      >
+                        <option value="pending">Bekliyor</option>
+                        <option value="confirmed">Onaylandı</option>
+                        <option value="completed">Tamamlandı</option>
+                        <option value="cancelled">İptal</option>
+                        <option value="no_show">Gelmedi</option>
+                      </select>
+                      <button
+                        onClick={() => handleEdit(booking)}
+                        className="text-indigo-600 hover:text-indigo-800 text-sm font-medium px-2 py-1"
+                        title="Düzenle"
+                      >
+                        Düzenle
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))
@@ -165,6 +187,12 @@ export default function BookingsPage() {
           </tbody>
         </table>
       </div>
+
+      <BookingEditDialog
+        booking={editingBooking}
+        isOpen={isEditDialogOpen}
+        onClose={handleCloseEdit}
+      />
     </div>
   )
 }

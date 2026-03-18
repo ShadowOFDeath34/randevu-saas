@@ -72,7 +72,7 @@ export async function POST(req: Request) {
     }
     
     // 5. Body'yi parse et
-    let body: any
+    let body: Record<string, unknown>
     const contentType = req.headers.get('content-type') || ''
     
     try {
@@ -91,7 +91,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid body' }, { status: 400 })
     }
 
-    const { status, paymentId, conversationId, mdStatus, iyziStatus } = body
+    const { status, paymentId, conversationId, mdStatus, iyziStatus } = body as {
+      status?: string
+      paymentId?: string
+      conversationId?: string
+      mdStatus?: string
+      iyziStatus?: string
+    }
 
     // 6. conversationId kontrolu
     if (!conversationId) {

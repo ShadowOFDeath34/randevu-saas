@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useCustomers, useCreateCustomer } from '@/hooks/use-customers'
+import { useCustomers, useCreateCustomer, useUpdateCustomer } from '@/hooks/use-customers'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 
@@ -19,10 +19,14 @@ interface CustomerView {
 export default function CustomersPage() {
   const [search, setSearch] = useState('')
   const [showModal, setShowModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editingCustomer, setEditingCustomer] = useState<CustomerView | null>(null)
   const [formData, setFormData] = useState({ fullName: '', phone: '', email: '', notes: '' })
+  const [editFormData, setEditFormData] = useState({ fullName: '', phone: '', email: '', notes: '' })
 
   const { data, isLoading, error } = useCustomers({ search })
   const createMutation = useCreateCustomer()
+  const updateMutation = useUpdateCustomer()
 
   const customers = (data?.data || []) as unknown as CustomerView[]
 
@@ -39,6 +43,40 @@ export default function CustomersPage() {
         onSuccess: () => {
           setShowModal(false)
           setFormData({ fullName: '', phone: '', email: '', notes: '' })
+        },
+      }
+    )
+  }
+
+  const handleEdit = (customer: CustomerView) => {
+    setEditingCustomer(customer)
+    setEditFormData({
+      fullName: customer.fullName,
+      phone: customer.phone,
+      email: customer.email || '',
+      notes: customer.notes || ''
+    })
+    setShowEditModal(true)
+  }
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingCustomer) return
+
+    updateMutation.mutate(
+      {
+        id: editingCustomer.id,
+        data: {
+          name: editFormData.fullName,
+          phone: editFormData.phone,
+          email: editFormData.email || undefined,
+          notes: editFormData.notes || undefined,
+        }
+      },
+      {
+        onSuccess: () => {
+          setShowEditModal(false)
+          setEditingCustomer(null)
         },
       }
     )
@@ -107,7 +145,7 @@ export default function CustomersPage() {
               </tr>
             ) : (
               customers.map((customer) => (
-                <tr key={customer.id} className="hover:bg-gray-50">
+                <tr key={customer.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => handleEdit(customer)}>
                   <td className="px-6 py-4 text-sm font-medium text-gray-900">{customer.fullName}</td>
                   <td className="px-6 py-4 text-sm text-gray-500">{customer.phone}</td>
                   <td className="px-6 py-4 text-sm text-gray-500">{customer.email || '-'}</td>
@@ -175,6 +213,67 @@ export default function CustomersPage() {
                   className="px-4 py-2 bg-indigo-600 text-white rounded-lg disabled:opacity-50"
                 >
                   {createMutation.isPending ? 'Ekleniyor...' : 'Ekle'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {showEditModal && editingCustomer && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Müşteri Düzenle</h2>
+            <form onSubmit={handleEditSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Ad Soyad</label>
+                <input
+                  type="text"
+                  value={editFormData.fullName}
+                  onChange={(e) => setEditFormData({ ...editFormData, fullName: e.target.value })}
+                  required
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Telefon</label>
+                <input
+                  type="tel"
+                  value={editFormData.phone}
+                  onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
+                  required
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">E-posta</label>
+                <input
+                  type="email"
+                  value={editFormData.email}
+                  onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Notlar</label>
+                <textarea
+                  value={editFormData.notes}
+                  onChange={(e) => setEditFormData({ ...editFormData, notes: e.target.value })}
+                  rows={2}
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg"
+                />
+              </div>
+              <div className="flex justify-end gap-3 pt-4">
+                <button type="button" onClick={() => setShowEditModal(false)} className="px-4 py-2 border border-gray-300 rounded-lg">
+                  İptal
+                </button>
+                <button
+                  type="submit"
+                  disabled={updateMutation.isPending}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg disabled:opacity-50"
+                >
+                  {updateMutation.isPending ? 'Kaydediliyor...' : 'Kaydet'}
                 </button>
               </div>
             </form>

@@ -108,6 +108,10 @@ export function useCreateBooking() {
 interface UpdateBookingData {
   status?: BookingStatus;
   notes?: string;
+  serviceId?: string;
+  staffId?: string;
+  bookingDate?: string;
+  startTime?: string;
 }
 
 export function useUpdateBooking() {
@@ -121,7 +125,8 @@ export function useUpdateBooking() {
         body: JSON.stringify(data),
       });
       if (!response.ok) {
-        throw new Error("Randevu güncellenirken hata oluştu");
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Randevu güncellenirken hata oluştu");
       }
       return response.json();
     },

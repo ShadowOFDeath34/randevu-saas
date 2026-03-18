@@ -2,12 +2,16 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 
 function ReviewContent() {
   const searchParams = useSearchParams()
   const code = searchParams.get('code')
   
-  const [booking, setBooking] = useState<any>(null)
+  const [booking, setBooking] = useState<{
+    service?: { name: string }
+    tenant?: { businessProfile?: { businessName: string } }
+  } | null>(null)
   const [loading, setLoading] = useState(true)
   const [submitted, setSubmitted] = useState(false)
   const [rating, setRating] = useState(5)
@@ -88,9 +92,9 @@ function ReviewContent() {
           <p className="text-gray-600 mb-6">
             Değerlendirmeniz için teşekkür ederiz. Görüşleriniz bizim için çok değerli.
           </p>
-          <a href="/" className="text-indigo-600 hover:underline">
+          <Link href="/" className="text-indigo-600 hover:underline">
             Ana sayfaya dön
-          </a>
+          </Link>
         </div>
       </div>
     )

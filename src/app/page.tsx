@@ -1,12 +1,11 @@
 import Link from 'next/link'
-import { 
-  Calendar, 
-  Users, 
-  Bell, 
-  Star, 
+import {
+  Calendar,
+  Users,
+  Bell,
+  Star,
   CheckCircle,
   ArrowRight,
-  Clipboard,
   BarChart3,
   Clock
 } from 'lucide-react'

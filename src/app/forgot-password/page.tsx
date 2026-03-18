@@ -29,7 +29,7 @@ export default function ForgotPasswordPage() {
         setStatus('error')
         setErrorMessage(data.error || 'Bir hata oluştu')
       }
-    } catch (err) {
+    } catch {
       setStatus('error')
       setErrorMessage('Ağ veya sunucu hatası')
     } finally {

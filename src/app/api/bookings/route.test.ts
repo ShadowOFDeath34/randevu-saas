@@ -8,6 +8,7 @@ vi.mock('@/lib/db', () => ({
   db: {
     booking: {
       findMany: vi.fn(),
+      count: vi.fn(),
     },
   },
 }))
@@ -22,7 +23,7 @@ describe('Bookings API', () => {
   })
 
   it('should return 401 when not authenticated', async () => {
-    ;(auth as any).mockResolvedValueOnce(null)
+    ;(auth as unknown as { mockResolvedValueOnce: (value: null) => void }).mockResolvedValueOnce(null)
 
     const request = new Request('http://localhost:3000/api/bookings')
     const response = await GET(request)
@@ -50,14 +51,15 @@ describe('Bookings API', () => {
       },
     ]
 
-    ;(auth as any).mockResolvedValueOnce(mockSession)
-    ;(db.booking.findMany as any).mockResolvedValueOnce(mockBookings)
+    ;(auth as unknown as { mockResolvedValueOnce: (value: typeof mockSession) => void }).mockResolvedValueOnce(mockSession)
+    ;(db.booking.findMany as unknown as { mockResolvedValueOnce: (value: typeof mockBookings) => void }).mockResolvedValueOnce(mockBookings)
 
     const request = new Request('http://localhost:3000/api/bookings')
     const response = await GET(request)
     const data = await response.json()
 
     expect(response.status).toBe(200)
-    expect(data).toEqual(mockBookings)
+    expect(data.data).toEqual(mockBookings)
+    expect(data.pagination).toBeDefined()
   })
 })

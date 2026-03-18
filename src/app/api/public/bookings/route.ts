@@ -119,9 +119,10 @@ export async function POST(req: Request) {
       ...result.booking,
       confirmationCode: result.confirmationCode
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating public booking:', error)
-    if (error.message === 'BU_SAAT_DOLU') {
+    const err = error as Error
+    if (err.message === 'BU_SAAT_DOLU') {
       return NextResponse.json({ error: 'Bu saat dilimi maalesef az önce doldu, lütfen başka bir saat seçin.' }, { status: 400 })
     }
     return NextResponse.json({ error: 'Randevu oluşturma hatası' }, { status: 500 })

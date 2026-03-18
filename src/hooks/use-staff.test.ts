@@ -44,7 +44,7 @@ describe('useStaff', () => {
       },
     ]
 
-    ;(fetch as any).mockResolvedValueOnce({
+    ;(fetch as unknown as { mockResolvedValueOnce: (value: { ok: boolean; json: () => Promise<typeof mockStaff> }) => void }).mockResolvedValueOnce({
       ok: true,
       json: async () => mockStaff,
     })
@@ -58,7 +58,7 @@ describe('useStaff', () => {
   })
 
   it('should handle fetch error', async () => {
-    ;(fetch as any).mockResolvedValueOnce({
+    ;(fetch as unknown as { mockResolvedValueOnce: (value: { ok: boolean }) => void }).mockResolvedValueOnce({
       ok: false,
     })
 
@@ -74,7 +74,7 @@ describe('useStaff', () => {
 describe('useCreateStaff', () => {
   it('should create staff successfully', async () => {
     const mockResponse = { id: '3', name: 'Yeni Personel', role: 'Berber' }
-    ;(fetch as any).mockResolvedValueOnce({
+    ;(fetch as unknown as { mockResolvedValueOnce: (value: { ok: boolean; json: () => Promise<typeof mockResponse> }) => void }).mockResolvedValueOnce({
       ok: true,
       json: async () => mockResponse,
     })

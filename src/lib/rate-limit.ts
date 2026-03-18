@@ -8,7 +8,6 @@
  */
 
 import { Redis } from '@upstash/redis'
-import { db } from '@/lib/db'
 
 // Redis client - lazy initialization
 let redis: Redis | null = null

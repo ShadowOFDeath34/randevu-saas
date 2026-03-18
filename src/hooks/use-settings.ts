@@ -10,6 +10,11 @@ interface BusinessProfile {
   district: string | null;
   description: string | null;
   bookingSlug: string;
+  bufferTimeMinutes?: number;
+  cancellationPolicyHours?: number;
+  allowOnlineBooking?: boolean;
+  maxAdvanceBookingDays?: number;
+  minAdvanceBookingHours?: number;
 }
 
 // Business Hours

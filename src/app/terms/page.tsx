@@ -16,8 +16,8 @@ export default function TermsPage() {
             <section className="mb-8">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">1. Sözleşmenin Tarafları</h2>
               <p className="text-gray-600 leading-relaxed">
-                Bu Kullanım Koşulları, RandevuAI ("Hizmet Sağlayıcı") ile platformu kullanan
-                işletmeler ve müşteriler ("Kullanıcı") arasında yapılan elektronik sözleşmenin
+                Bu Kullanım Koşulları, RandevuAI (&quot;Hizmet Sağlayıcı&quot;) ile platformu kullanan
+                işletmeler ve müşteriler (&quot;Kullanıcı&quot;) arasında yapılan elektronik sözleşmenin
                 şartlarını belirler. Platformu kullanarak bu koşulları kabul etmiş sayılırsınız.
               </p>
             </section>
@@ -85,7 +85,7 @@ export default function TermsPage() {
             <section className="mb-8">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">6. Fikri Mülkiyet</h2>
               <p className="text-gray-600 leading-relaxed">
-                RandevuAI'nin tüm içeriği, tasarımı, kodu ve markaları fikri mülkiyet
+                RandevuAI&apos;nin tüm içeriği, tasarımı, kodu ve markaları fikri mülkiyet
                 koruması altındadır. Kullanıcılar, platformu yalnızca hizmet almak için
                 kullanabilir; tersine mühendislik yapamaz, kopyalayamaz veya dağıtamazlar.
               </p>

@@ -74,10 +74,11 @@ export async function POST(req: Request) {
       tenantId: tenant.id,
       message: 'İşletme başarıyla oluşturuldu'
     })
-  } catch (error: any) {
-    if (error.name === 'ZodError') {
+  } catch (error: unknown) {
+    if (error instanceof Error && error.name === 'ZodError') {
+      const zodError = error as unknown as { errors: { message: string }[] }
       return NextResponse.json(
-        { error: error.errors[0].message },
+        { error: zodError.errors[0].message },
         { status: 400 }
       )
     }

@@ -64,7 +64,7 @@ export default function KioskPage({ params }: { params: Promise<{ slug: string }
         setMessage(data.error || 'Bir hata oluştu.')
         setTimeout(() => setStatus('idle'), 4000)
       }
-    } catch (err) {
+    } catch {
       setStatus('error')
       setMessage('Ağ hatası oluştu.')
       setTimeout(() => setStatus('idle'), 4000)

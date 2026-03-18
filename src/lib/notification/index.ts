@@ -24,6 +24,20 @@ export interface NotificationResult {
   error?: string
 }
 
+interface BookingInfo {
+  bookingDate: string
+  startTime: string
+  confirmationCode?: string
+  service?: { name: string }
+  tenant?: { businessProfile?: { businessName: string } }
+}
+
+interface CustomerInfo {
+  fullName: string
+  email?: string
+  phone: string
+}
+
 class EmailProvider {
   async send(params: SendEmailParams): Promise<NotificationResult> {
     if (!process.env.RESEND_API_KEY) {
@@ -53,9 +67,10 @@ class EmailProvider {
 
       const data = await res.json()
       return { success: true, messageId: data.id }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Email send error:', error)
-      return { success: false, error: error.message }
+      const err = error as Error
+      return { success: false, error: err.message }
     }
   }
 }
@@ -87,9 +102,10 @@ class SMSProvider {
       }
       
       return { success: false, error: text }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('SMS send error:', error)
-      return { success: false, error: error.message }
+      const err = error as Error
+      return { success: false, error: err.message }
     }
   }
 }
@@ -102,6 +118,7 @@ class WhatsAppProvider {
     }
 
     try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const twilio = require('twilio')(
         process.env.TWILIO_ACCOUNT_SID,
         process.env.TWILIO_AUTH_TOKEN
@@ -114,9 +131,10 @@ class WhatsAppProvider {
       })
 
       return { success: true, messageId: message.sid }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('WhatsApp send error:', error)
-      return { success: false, error: error.message }
+      const err = error as Error
+      return { success: false, error: err.message }
     }
   }
 
@@ -146,7 +164,7 @@ export class NotificationService {
     return this.whatsAppProvider.send(params)
   }
 
-  async sendBookingConfirmation(booking: any, customer: any): Promise<void> {
+  async sendBookingConfirmation(booking: BookingInfo, customer: CustomerInfo): Promise<void> {
     const template = this.getTemplate('booking_confirmation')
     
     await this.sendEmail({
@@ -172,7 +190,7 @@ export class NotificationService {
     })
   }
 
-  async sendBookingReminder(booking: any, customer: any, hoursBefore: number): Promise<void> {
+  async sendBookingReminder(booking: BookingInfo, customer: CustomerInfo, hoursBefore: number): Promise<void> {
     const template = this.getTemplate('booking_reminder')
     
     await this.sendEmail({
@@ -188,7 +206,7 @@ export class NotificationService {
     })
   }
 
-  async sendBookingCancelled(booking: any, customer: any): Promise<void> {
+  async sendBookingCancelled(booking: BookingInfo, customer: CustomerInfo): Promise<void> {
     const template = this.getTemplate('booking_cancelled')
     
     await this.sendEmail({
@@ -203,7 +221,7 @@ export class NotificationService {
     })
   }
 
-  async sendReviewRequest(booking: any, customer: any): Promise<void> {
+  async sendReviewRequest(booking: BookingInfo, customer: CustomerInfo): Promise<void> {
     const template = this.getTemplate('review_request')
     
     const reviewLink = `${process.env.NEXT_PUBLIC_APP_URL}/review/${booking.confirmationCode}`

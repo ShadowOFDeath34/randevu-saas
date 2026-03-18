@@ -34,7 +34,7 @@ function LoginForm() {
         router.push(callbackUrl)
         router.refresh()
       }
-    } catch (err) {
+    } catch {
       setError('Bir hata oluştu')
     } finally {
       setLoading(false)
@@ -239,7 +239,7 @@ export default function LoginPage() {
             <Link href="#" className="underline hover:text-neutral-600 transition-colors">Kullanım Şartları</Link>
             {' '}ve{' '}
             <Link href="#" className="underline hover:text-neutral-600 transition-colors">Gizlilik Politikası</Link>
-            'nı kabul etmiş olursunuz.
+            &apos;nı kabul etmiş olursunuz.
           </p>
         </div>
       </div>

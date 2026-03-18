@@ -49,7 +49,7 @@ describe('useCustomers', () => {
       totalPages: 1,
     }
 
-    ;(fetch as any).mockResolvedValueOnce({
+    ;(fetch as unknown as { mockResolvedValueOnce: (value: { ok: boolean; json: () => Promise<typeof mockResponse> }) => void }).mockResolvedValueOnce({
       ok: true,
       json: async () => mockResponse,
     })
@@ -63,7 +63,7 @@ describe('useCustomers', () => {
   })
 
   it('should handle fetch error', async () => {
-    ;(fetch as any).mockResolvedValueOnce({
+    ;(fetch as unknown as { mockResolvedValueOnce: (value: { ok: boolean }) => void }).mockResolvedValueOnce({
       ok: false,
     })
 
@@ -78,7 +78,7 @@ describe('useCustomers', () => {
   it('should include search params in request', async () => {
     const mockResponse = { customers: [], total: 0, page: 1, totalPages: 0 }
 
-    ;(fetch as any).mockResolvedValueOnce({
+    ;(fetch as unknown as { mockResolvedValueOnce: (value: { ok: boolean; json: () => Promise<typeof mockResponse> }) => void }).mockResolvedValueOnce({
       ok: true,
       json: async () => mockResponse,
     })
@@ -96,7 +96,7 @@ describe('useCustomers', () => {
 describe('useCreateCustomer', () => {
   it('should create customer successfully', async () => {
     const mockResponse = { id: '3', name: 'Yeni Müşteri', phone: '5559998888' }
-    ;(fetch as any).mockResolvedValueOnce({
+    ;(fetch as unknown as { mockResolvedValueOnce: (value: { ok: boolean; json: () => Promise<typeof mockResponse> }) => void }).mockResolvedValueOnce({
       ok: true,
       json: async () => mockResponse,
     })

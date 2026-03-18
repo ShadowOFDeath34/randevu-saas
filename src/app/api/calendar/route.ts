@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { Prisma } from '@prisma/client'
 
 export async function GET(req: Request) {
   try {
@@ -18,7 +19,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Tarih aralığı gereklidir' }, { status: 400 })
     }
 
-    const where: any = {
+    const where: Prisma.BookingWhereInput = {
       tenantId: session.user.tenantId,
       bookingDate: {
         gte: start,

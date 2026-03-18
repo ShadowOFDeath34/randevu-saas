@@ -78,7 +78,7 @@ export interface CreateSubscriptionParams {
 export async function createPayment(params: CreatePaymentParams) {
   const client = await getIyziClient()
   return new Promise((resolve, reject) => {
-    client.payment.create(params, (err: any, result: any) => {
+    client.payment.create(params, (err: Error | null, result: unknown) => {
       if (err) {
         reject(err)
       } else {
@@ -209,7 +209,7 @@ export async function createSubscriptionCheckout(params: CreateSubscriptionParam
 
   const client = await getIyziClient()
   return new Promise((resolve, reject) => {
-    client.checkoutFormAuthInitialize.create(checkoutFormInit, (err: any, result: any) => {
+    client.checkoutFormAuthInitialize.create(checkoutFormInit, (err: Error | null, result: unknown) => {
       if (err) {
         reject(err)
       } else {
@@ -228,7 +228,7 @@ export async function cancelSubscription(subscriptionId: string) {
 
   const client = await getIyziClient()
   return new Promise((resolve, reject) => {
-    client.subscription.cancel(cancel, (err: any, result: any) => {
+    client.subscription.cancel(cancel, (err: Error | null, result: unknown) => {
       if (err) {
         reject(err)
       } else {
@@ -247,7 +247,7 @@ export async function getSubscription(subscriptionId: string) {
 
   const client = await getIyziClient()
   return new Promise((resolve, reject) => {
-    client.subscription.retrieve(retrieve, (err: any, result: any) => {
+    client.subscription.retrieve(retrieve, (err: Error | null, result: unknown) => {
       if (err) {
         reject(err)
       } else {
@@ -257,6 +257,6 @@ export async function getSubscription(subscriptionId: string) {
   })
 }
 
-export function isPaymentSuccess(result: any): boolean {
+export function isPaymentSuccess(result: { status?: string; paymentStatus?: string }): boolean {
   return result.status === 'success' || result.paymentStatus === 'SUCCESS'
 }

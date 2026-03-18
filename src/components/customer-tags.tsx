@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Tag, X } from 'lucide-react'
+import { Plus, X } from 'lucide-react'
 
 interface Customer {
   id: string

@@ -28,7 +28,20 @@ export async function PUT(req: Request) {
     }
 
     const body = await req.json()
-    const { businessName, phone, email, address, city, district, description } = body
+    const {
+      businessName,
+      phone,
+      email,
+      address,
+      city,
+      district,
+      description,
+      bufferTimeMinutes,
+      cancellationPolicyHours,
+      allowOnlineBooking,
+      maxAdvanceBookingDays,
+      minAdvanceBookingHours
+    } = body
 
     const profile = await db.businessProfile.update({
       where: { tenantId: session.user.tenantId },
@@ -39,7 +52,12 @@ export async function PUT(req: Request) {
         address,
         city,
         district,
-        description
+        description,
+        ...(bufferTimeMinutes !== undefined && { bufferTimeMinutes }),
+        ...(cancellationPolicyHours !== undefined && { cancellationPolicyHours }),
+        ...(allowOnlineBooking !== undefined && { allowOnlineBooking }),
+        ...(maxAdvanceBookingDays !== undefined && { maxAdvanceBookingDays }),
+        ...(minAdvanceBookingHours !== undefined && { minAdvanceBookingHours })
       }
     })
 

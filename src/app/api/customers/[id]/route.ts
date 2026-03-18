@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { Prisma } from '@prisma/client'
 
 // GET - Tekil müşteri getir
 export async function GET(
@@ -164,7 +165,7 @@ export async function PATCH(
     }
 
     // Sadece gönderilen alanları güncelle
-    const updateData: any = {}
+    const updateData: Prisma.CustomerUpdateInput = {}
     if (body.fullName !== undefined) updateData.fullName = body.fullName
     if (body.phone !== undefined) updateData.phone = body.phone
     if (body.email !== undefined) updateData.email = body.email
