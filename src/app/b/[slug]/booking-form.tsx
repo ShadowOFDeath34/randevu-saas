@@ -1,7 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, useCallback } from 'react'
 import { Check, ChevronRight, Clock, Calendar, User, CheckCircle2, Sparkles } from 'lucide-react'
 
 interface Service {
@@ -43,7 +42,6 @@ const steps = [
 ]
 
 export default function BookingForm({ tenant, services, staff, dates }: Props) {
-  const router = useRouter()
   const [step, setStep] = useState(1)
   const [selectedService, setSelectedService] = useState<Service | null>(null)
   const [selectedStaff, setSelectedStaff] = useState<string>('')
@@ -63,13 +61,7 @@ export default function BookingForm({ tenant, services, staff, dates }: Props) {
     notes: ''
   })
 
-  useEffect(() => {
-    if (selectedDate && selectedService) {
-      fetchSlots()
-    }
-  }, [selectedDate, selectedService, selectedStaff])
-
-  const fetchSlots = async () => {
+  const fetchSlots = useCallback(async () => {
     setLoading(true)
     try {
       const params = new URLSearchParams({
@@ -91,7 +83,13 @@ export default function BookingForm({ tenant, services, staff, dates }: Props) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [selectedDate, selectedService, selectedStaff, tenant.slug])
+
+  useEffect(() => {
+    if (selectedDate && selectedService) {
+      fetchSlots()
+    }
+  }, [selectedDate, selectedService, selectedStaff, fetchSlots])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

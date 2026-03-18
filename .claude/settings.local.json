@@ -54,7 +54,8 @@
       "WebFetch(domain:sandbox.iyzico.com)",
       "Bash(git commit:*)",
       "mcp__plugin_serena_serena__search_for_pattern",
-      "Bash(git diff:*)"
+      "Bash(git diff:*)",
+      "Bash(npm init:*)"
     ]
   }
 }

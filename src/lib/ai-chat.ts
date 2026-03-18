@@ -56,7 +56,7 @@ const businessHours = {
 }
 
 export async function generateAIResponse(request: AIChatRequest): Promise<AIChatResponse> {
-  const { message, tenantId: _tenantId, customerName, language = 'tr' } = request
+  const { message, customerName, language = 'tr' } = request
   
   const lowerMessage = message.toLowerCase()
   const lang = language as 'tr' | 'en'

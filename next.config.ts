@@ -4,6 +4,9 @@ const nextConfig: NextConfig = {
   // Turbopack ile uyumsuz paketleri external olarak isaretle
   serverExternalPackages: ['iyzipay'],
 
+  // Static sayfa optimizasyonu
+  output: 'standalone',
+
   // Görsel optimizasyonu
   images: {
     formats: ['image/webp', 'image/avif'],

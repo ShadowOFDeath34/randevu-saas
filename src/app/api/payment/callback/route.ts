@@ -1,12 +1,11 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { sendSMS } from '@/lib/sms'
 import { sendEmail } from '@/lib/email'
 
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const { status, paymentId, conversationId, token } = body
+    const { status, paymentId } = body
 
     // Extract tenant and plan info from conversationId or query params
     const { searchParams } = new URL(req.url)
@@ -35,7 +34,7 @@ export async function POST(req: Request) {
         },
         data: {
           status: 'active',
-          externalSubscriptionId: token || paymentId
+          externalSubscriptionId: paymentId
         }
       })
 
@@ -95,9 +94,7 @@ export async function POST(req: Request) {
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url)
-    const token = searchParams.get('token')
     const status = searchParams.get('status')
-    const tenantId = searchParams.get('tenant')
 
     if (status === 'success') {
       return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/subscription/success`)

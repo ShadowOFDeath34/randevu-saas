@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Calendar, Clock, User, X, AlertCircle } from 'lucide-react'
@@ -25,15 +25,7 @@ function PortalBookingsContent() {
   const [error, setError] = useState('')
   const [cancellingId, setCancellingId] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (phone) {
-      fetchBookings()
-    } else {
-      setLoading(false)
-    }
-  }, [phone])
-
-  const fetchBookings = async () => {
+  const fetchBookings = useCallback(async () => {
     try {
       const res = await fetch(`/api/portal/bookings?phone=${encodeURIComponent(phone!)}`)
       if (!res.ok) throw new Error('Failed to fetch')
@@ -44,7 +36,15 @@ function PortalBookingsContent() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [phone])
+
+  useEffect(() => {
+    if (phone) {
+      fetchBookings()
+    } else {
+      setLoading(false)
+    }
+  }, [phone, fetchBookings])
 
   const cancelBooking = async (bookingId: string) => {
     if (!confirm('Randevunuzu iptal etmek istediğinize emin misiniz?')) return

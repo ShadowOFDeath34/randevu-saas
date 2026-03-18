@@ -37,7 +37,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const { code, rating, comment } = body
+    const { code, rating } = body
 
     if (!code || !rating) {
       return NextResponse.json({ error: 'Eksik bilgi' }, { status: 400 })

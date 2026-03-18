@@ -3,7 +3,12 @@ import { Inter, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { QueryProvider } from "@/components/query-provider";
 import { ThemeProvider } from "@/components/theme-provider";
-import StructuredData from "@/components/structured-data";
+import dynamic from "next/dynamic";
+
+// StructuredData'yi lazy load yap - SEO için kritik değil, render sonrası yüklenir
+const StructuredData = dynamic(() => import("@/components/structured-data"), {
+  ssr: true,
+});
 
 const inter = Inter({
   variable: "--font-inter",
@@ -17,6 +22,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://randevuai.com'),
   title: {
     default: "RandevuAI - Akıllı Randevu Yönetimi",
     template: "%s | RandevuAI"

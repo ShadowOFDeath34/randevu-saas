@@ -9,7 +9,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { segment, type, businessContext } = await req.json()
+    const { segment, type } = await req.json()
 
     if (!segment || !type) {
       return NextResponse.json({ error: 'Segment ve tip gereklidir' }, { status: 400 })

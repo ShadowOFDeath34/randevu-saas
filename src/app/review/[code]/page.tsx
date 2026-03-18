@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
@@ -17,13 +17,7 @@ function ReviewContent() {
   const [rating, setRating] = useState(5)
   const [comment, setComment] = useState('')
 
-  useEffect(() => {
-    if (code) {
-      fetchBooking()
-    }
-  }, [code])
-
-  const fetchBooking = async () => {
+  const fetchBooking = useCallback(async () => {
     try {
       const res = await fetch(`/api/public/review?code=${code}`)
       const data = await res.json()
@@ -33,7 +27,13 @@ function ReviewContent() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [code])
+
+  useEffect(() => {
+    if (code) {
+      fetchBooking()
+    }
+  }, [code, fetchBooking])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

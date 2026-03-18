@@ -16,17 +16,13 @@ export async function GET(req: Request) {
     const now = new Date()
 
     let startDate: Date
-    let groupBy: 'day' | 'week' | 'month'
 
     if (period === 'week') {
       startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-      groupBy = 'day'
     } else if (period === 'month') {
       startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
-      groupBy = 'day'
     } else {
       startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000)
-      groupBy = 'month'
     }
 
     const startDateStr = startDate.toISOString().split('T')[0]

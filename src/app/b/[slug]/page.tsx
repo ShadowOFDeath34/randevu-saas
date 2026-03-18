@@ -2,7 +2,6 @@ import { notFound } from 'next/navigation'
 import { db } from '@/lib/db'
 import BookingForm from './booking-form'
 import { MapPin, Phone, Clock } from 'lucide-react'
-import { Suspense } from 'react'
 import Image from 'next/image'
 
 // Chat widget'i lazy load ile yükle - performans için

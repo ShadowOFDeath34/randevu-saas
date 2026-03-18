@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { useAnalyticsStats } from '@/hooks/use-analytics'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
-  BarChart3,
   TrendingUp,
   TrendingDown,
   Calendar,
@@ -179,7 +178,7 @@ export default function AnalyticsPage() {
         <div className="bg-white p-6 rounded-xl border border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">En Aktif Personel</h2>
           <div className="space-y-4">
-            {stats.topStaff.slice(0, 5).map((staffMember, index) => (
+            {stats.topStaff.slice(0, 5).map((staffMember) => (
               <div key={staffMember.name} className="flex items-center gap-4">
                 <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center text-white font-medium">
                   {staffMember.name.charAt(0)}

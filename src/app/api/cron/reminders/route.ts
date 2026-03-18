@@ -59,8 +59,8 @@ export async function GET(req: Request) {
         }
 
         results.reminders24h.sent++
-      } catch (error) {
-        console.error('24h reminder failed:', error)
+      } catch (_err) {
+        console.error('24h reminder failed:', _err)
         results.reminders24h.failed++
       }
     }
@@ -70,7 +70,7 @@ export async function GET(req: Request) {
       results,
       summary: { totalSent: results.reminders24h.sent + results.reminders1h.sent },
     })
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Failed' }, { status: 500 })
   }
 }

@@ -45,11 +45,8 @@ export async function POST(req: Request) {
       }
     }
 
-    const lastBooking = await db.booking.findFirst({
-      where: { tenantId: tenant.id, customerId },
-      orderBy: { bookingDate: 'desc' },
-      include: { service: true }
-    })
+    // lastBooking verisi şu anda kullanılmıyor, gelecekte kullanılacak
+    // const lastBooking = await db.booking.findFirst({...
 
     const language = detectLanguage(message)
 

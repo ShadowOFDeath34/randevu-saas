@@ -51,7 +51,7 @@ function ResetPasswordForm() {
         setStatus('error')
         setErrorMessage(data.error || 'Token geçersiz veya süresi dolmuş')
       }
-    } catch (err) {
+    } catch {
       setStatus('error')
       setErrorMessage('Bir hata oluştu')
     } finally {

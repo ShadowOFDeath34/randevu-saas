@@ -23,19 +23,6 @@ interface Invoice {
   description?: string
 }
 
-interface Subscription {
-  id: string
-  status: string
-  startDate: string
-  endDate?: string
-  trialEndsAt?: string
-  plan: {
-    name: string
-    price: number
-    billingPeriod: string
-  }
-}
-
 export default function SubscriptionPage() {
   const { data: subscriptionData, isLoading: subLoading } = useSubscription()
   const { data: plans = [], isLoading: plansLoading } = usePlans()

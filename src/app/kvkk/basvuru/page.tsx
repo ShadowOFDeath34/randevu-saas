@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Metadata } from "next";
 import { Shield, User, Mail, Phone, FileText, Send, CheckCircle } from "lucide-react";
 
 export default function KVKKBasvuruPage() {

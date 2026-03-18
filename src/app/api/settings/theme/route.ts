@@ -32,7 +32,7 @@ export async function PUT(req: Request) {
     }
 
     const body = await req.json()
-    const { logoUrl, primaryColor } = body
+    const { logoUrl } = body
 
     // Server-side validation for base64 image size (approx 2MB limit)
     if (logoUrl && typeof logoUrl === 'string') {

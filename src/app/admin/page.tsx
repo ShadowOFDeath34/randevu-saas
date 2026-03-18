@@ -1,7 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { db } from '@/lib/db'
+import { useState, useEffect, useCallback } from 'react'
 
 interface Tenant {
   id: string
@@ -29,11 +28,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all')
 
-  useEffect(() => {
-    fetchData()
-  }, [filter])
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true)
     try {
       const [tenantsRes, statsRes] = await Promise.all([
@@ -49,7 +44,11 @@ export default function AdminPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [filter])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
 
   const updateTenantStatus = async (tenantId: string, status: string) => {
     try {

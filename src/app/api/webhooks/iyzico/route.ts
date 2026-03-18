@@ -26,21 +26,6 @@ function verifyWebhookSignature(
   }
 }
 
-/**
- * IP whitelist kontrolu (iyzico IP'leri)
- */
-function isAllowedIP(ip: string): boolean {
-  // iyzico webhook IP'leri (guncel listeyi iyzico dokumantasyonundan alin)
-  const allowedIPs = [
-    '185.29.92.0/22', // Ornek IP range
-    // Gercek IP'ler eklenecek
-  ]
-  
-  // IP kontrolu implementasyonu
-  // Not: Vercel'de req.ip dogrudan gelmez, X-Forwarded-For header'i kullanilir
-  return true // Gecici olarak devre disi
-}
-
 export async function POST(req: Request) {
   try {
     // 1. IP kontrolu (opsiyonel ama onerilir)

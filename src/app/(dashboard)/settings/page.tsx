@@ -9,22 +9,6 @@ import {
 } from '@/hooks/use-settings'
 import { Skeleton } from '@/components/ui/skeleton'
 
-interface BusinessProfile {
-  businessName: string
-  phone: string | null
-  email: string | null
-  address: string | null
-  city: string | null
-  district: string | null
-  description: string | null
-  bookingSlug: string
-  bufferTimeMinutes?: number
-  cancellationPolicyHours?: number
-  allowOnlineBooking?: boolean
-  maxAdvanceBookingDays?: number
-  minAdvanceBookingHours?: number
-}
-
 interface BusinessHours {
   dayOfWeek: number
   openTime: string | null
