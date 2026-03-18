@@ -96,3 +96,12 @@ export function getDayName(dayIndex: number): string {
   const days = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi']
   return days[dayIndex]
 }
+
+export function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat('tr-TR', {
+    style: 'currency',
+    currency: 'TRY',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }).format(amount)
+}
