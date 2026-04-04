@@ -1,6 +1,15 @@
 import { db } from '@/lib/db'
-import { sendSMS } from '@/lib/sms'
-import { sendEmail } from '@/lib/email'
+
+// Stub implementations for missing services
+async function sendSMS({ to, message }: { to: string; message: string }) {
+  console.log(`[SMS] To: ${to}, Message: ${message}`)
+  // TODO: Integrate with actual SMS provider
+}
+
+async function sendEmail({ to, subject, html }: { to: string; subject: string; html: string }) {
+  console.log(`[Email] To: ${to}, Subject: ${subject}`)
+  // TODO: Integrate with actual email provider
+}
 
 interface TriggerContext {
   manual?: boolean
