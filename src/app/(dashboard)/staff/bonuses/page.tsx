@@ -47,8 +47,27 @@ import {
   Plus,
   Calendar,
   BarChart3,
-  Award
+  Award,
+  PieChart,
+  Activity,
+  UserCircle,
+  TrendingDown
 } from 'lucide-react'
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as ReTooltip,
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  PieChart as RePieChart,
+  Pie,
+  Cell,
+  Legend
+} from 'recharts'
 
 interface BonusConfig {
   id: string
@@ -83,6 +102,26 @@ interface Bonus {
   approvedAt: string | null
   paidAt: string | null
   createdAt: string
+}
+
+interface PerformanceData {
+  name: string
+  bonus: number
+  bookings: number
+  rating: number
+}
+
+interface MonthlyTrend {
+  month: string
+  totalBonus: number
+  paidCount: number
+  pendingCount: number
+}
+
+interface StatusDistribution {
+  name: string
+  value: number
+  color: string
 }
 
 const PERIOD_LABELS: Record<string, string> = {
@@ -124,6 +163,12 @@ export default function StaffBonusesPage() {
     totalPaid: 0,
     totalPending: 0
   })
+
+  // Analytics data
+  const [performanceData, setPerformanceData] = useState<PerformanceData[]>([])
+  const [monthlyTrend, setMonthlyTrend] = useState<MonthlyTrend[]>([])
+  const [statusDistribution, setStatusDistribution] = useState<StatusDistribution[]>([])
+  const [topPerformers, setTopPerformers] = useState<Bonus[]>([])
 
   // Config form state
   const [isConfigDialogOpen, setIsConfigDialogOpen] = useState(false)
@@ -173,9 +218,12 @@ export default function StaffBonusesPage() {
         }
       }
 
+      let bonusesData: Bonus[] = []
       if (bonusesRes.ok) {
-        const bonusesData = await bonusesRes.json()
+        bonusesData = await bonusesRes.json()
         setBonuses(bonusesData)
+        // Process analytics data
+        processAnalyticsData(bonusesData)
       }
 
       if (statsRes.ok) {
@@ -188,6 +236,61 @@ export default function StaffBonusesPage() {
       setLoading(false)
     }
   }
+
+  const processAnalyticsData = (bonusesData: Bonus[]) => {
+    if (!bonusesData.length) return
+
+    // Performance by staff
+    const staffPerformance = bonusesData.reduce((acc, bonus) => {
+      if (!acc[bonus.staffName]) {
+        acc[bonus.staffName] = { name: bonus.staffName, bonus: 0, bookings: 0, rating: 0 }
+      }
+      acc[bonus.staffName].bonus += bonus.calculatedBonus
+      acc[bonus.staffName].bookings += 1
+      return acc
+    }, {} as Record<string, PerformanceData>)
+    setPerformanceData(Object.values(staffPerformance).sort((a, b) => b.bonus - a.bonus))
+
+    // Monthly trend (last 6 months)
+    const months: MonthlyTrend[] = []
+    const monthNames = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık']
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date()
+      d.setMonth(d.getMonth() - i)
+      const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+      const monthBonuses = bonusesData.filter(b => {
+        const bMonth = `${b.year}-${String(b.month || 1).padStart(2, '0')}`
+        return bMonth === monthKey
+      })
+      months.push({
+        month: monthNames[d.getMonth()],
+        totalBonus: monthBonuses.reduce((sum, b) => sum + b.calculatedBonus, 0),
+        paidCount: monthBonuses.filter(b => b.status === 'PAID').length,
+        pendingCount: monthBonuses.filter(b => b.status === 'PENDING' || b.status === 'CALCULATED' || b.status === 'APPROVED').length
+      })
+    }
+    setMonthlyTrend(months)
+
+    // Status distribution
+    const statusCounts = bonusesData.reduce((acc, bonus) => {
+      acc[bonus.status] = (acc[bonus.status] || 0) + 1
+      return acc
+    }, {} as Record<string, number>)
+    const statusColors: Record<string, string> = {
+      PAID: '#22c55e',
+      APPROVED: '#eab308',
+      CALCULATED: '#3b82f6',
+      PENDING: '#6b7280',
+      CANCELLED: '#ef4444'
+    }
+    setStatusDistribution(Object.entries(statusCounts).map(([status, count]) => ({
+      name: STATUS_LABELS[status]?.label || status,
+      value: count,
+      color: statusColors[status] || '#6b7280'
+    })))
+
+    // Top performers
+    setTopPerformers(bonusesData.filter(b => b.status === 'PAID').sort((a, b) => b.calculatedBonus - a.calculatedBonus).slice(0, 5))
 
   const saveConfig = async () => {
     try {
@@ -349,6 +452,10 @@ export default function StaffBonusesPage() {
           <TabsTrigger value="overview">
             <BarChart3 className="h-4 w-4 mr-2" />
             Özet
+          </TabsTrigger>
+          <TabsTrigger value="analytics">
+            <TrendingUp className="h-4 w-4 mr-2" />
+            Analiz
           </TabsTrigger>
           <TabsTrigger value="bonuses">
             <Trophy className="h-4 w-4 mr-2" />
@@ -523,6 +630,146 @@ export default function StaffBonusesPage() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="analytics">
+          <div className="space-y-6">
+            {/* Monthly Trend Chart */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5" />
+                  Aylık Prim Trendi
+                </CardTitle>
+                <CardDescription>Son 6 ayın prim dağılımı</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {monthlyTrend.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LineChart data={monthlyTrend}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="month" />
+                      <YAxis />
+                      <ReTooltip />
+                      <Legend />
+                      <Line type="monotone" dataKey="totalBonus" name="Toplam Prim" stroke="#8884d8" strokeWidth={2} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <p className="text-muted-foreground text-center py-8">Henüz yeterli veri yok.</p>
+                )}
+              </CardContent>
+            </Card>
+
+            <div className="grid gap-6 md:grid-cols-2">
+              {/* Staff Performance Bar Chart */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5" />
+                    Personel Performansı
+                  </CardTitle>
+                  <CardDescription>Toplam prim bazlı sıralama</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {performanceData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={250}>
+                      <BarChart data={performanceData.slice(0, 5)}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                        <YAxis />
+                        <ReTooltip />
+                        <Bar dataKey="bonus" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <p className="text-muted-foreground text-center py-8">Henüz veri yok.</p>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Status Distribution Pie Chart */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <PieChart className="h-5 w-5" />
+                    Durum Dağılımı
+                  </CardTitle>
+                  <CardDescription>Prim kayıtlarının durumları</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {statusDistribution.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={250}>
+                      <RePieChart>
+                        <Pie
+                          data={statusDistribution}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={(data: { name?: string; percent?: number }) => `${data.name || ''} ${((data.percent || 0) * 100).toFixed(0)}%`}
+                          outerRadius={80}
+                          fill="#8884d8"
+                          dataKey="value"
+                        >
+                          {statusDistribution.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <ReTooltip />
+                      </RePieChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <p className="text-muted-foreground text-center py-8">Henüz veri yok.</p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Top Performers Table */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Award className="h-5 w-5" />
+                  En İyi Performans Gösterenler
+                </CardTitle>
+                <CardDescription>En yüksek prim alan personeller</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {topPerformers.length > 0 ? (
+                  <div className="space-y-3">
+                    {topPerformers.map((performer, index) => (
+                      <div key={performer.id} className="flex items-center justify-between p-4 bg-muted rounded-lg">
+                        <div className="flex items-center gap-4">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${
+                            index === 0 ? 'bg-yellow-500 text-white' :
+                            index === 1 ? 'bg-gray-400 text-white' :
+                            index === 2 ? 'bg-amber-600 text-white' :
+                            'bg-gray-200 text-gray-700'
+                          }`}>
+                            {index + 1}
+                          </div>
+                          <div>
+                            <p className="font-medium">{performer.staffName}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {performer.year}-{performer.month || performer.week || performer.quarter}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-lg font-bold text-green-600">
+                            ₺{performer.calculatedBonus.toLocaleString('tr-TR')}
+                          </p>
+                          <p className="text-sm text-muted-foreground">{STATUS_LABELS[performer.status].label}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-center py-8">Henüz ödeme yapılmamış prim kaydı yok.</p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
         <TabsContent value="targets">
           <Card>
             <CardHeader>
@@ -691,4 +938,4 @@ export default function StaffBonusesPage() {
       </Dialog>
     </div>
   )
-}
+}}
