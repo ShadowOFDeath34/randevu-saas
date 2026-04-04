@@ -66,12 +66,16 @@ export async function getOrCreateLoyaltyConfig(tenantId: string): Promise<Loyalt
 export async function updateCustomerTier(customerId: string, totalPoints: number): Promise<void> {
   const customer = await db.customer.findUnique({
     where: { id: customerId },
-    include: { tenant: { include: { loyaltyConfig: true } } }
+    include: { tenant: true }
   })
 
-  if (!customer || !customer.tenant.loyaltyConfig) return
+  if (!customer) return
 
-  const config = customer.tenant.loyaltyConfig
+  const config = await db.loyaltyConfig.findUnique({
+    where: { tenantId: customer.tenantId }
+  })
+
+  if (!config) return
   let newTier = 'BRONZE'
 
   if (totalPoints >= config.platinumThreshold) {

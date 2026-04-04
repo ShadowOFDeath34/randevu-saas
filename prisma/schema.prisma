@@ -85,6 +85,7 @@ model Tenant {
   auditLogs         AuditLog[]
   campaigns         Campaign[]
   campaignTriggers  CampaignTrigger[]
+  loyaltyConfig     LoyaltyConfig?
 }
 
 model User {
