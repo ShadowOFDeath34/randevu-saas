@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
+import {
+  analyzeCustomerBehavior,
+  generateBookingPredictions,
+  segmentCustomers
+} from '@/lib/ai/analytics'
 
 export async function GET(req: Request) {
   try {
@@ -37,7 +42,11 @@ export async function GET(req: Request) {
       repeatCustomersAgg,
       popularServicesAgg,
       topStaffAgg,
-      dailyBookingsAgg
+      dailyBookingsAgg,
+      // AI Analytics
+      customerBehavior,
+      predictions,
+      customerSegments
     ] = await Promise.all([
       // Single query for all booking counts by status + revenue
       db.$queryRawUnsafe<{ status: string; count: bigint; revenue: number }[]>(`
@@ -112,7 +121,12 @@ export async function GET(req: Request) {
           AND b."bookingDate" >= $2
         GROUP BY b."bookingDate"
         ORDER BY b."bookingDate" ASC
-      `, tenantId, startDateStr)
+      `, tenantId, startDateStr),
+
+      // AI Analytics
+      analyzeCustomerBehavior(tenantId, startDate),
+      generateBookingPredictions(tenantId),
+      segmentCustomers(tenantId)
     ])
 
     // Process aggregated results
@@ -143,6 +157,7 @@ export async function GET(req: Request) {
     }))
 
     return NextResponse.json({
+      // Basic stats
       totalBookings,
       completedBookings,
       cancelledBookings,
@@ -154,7 +169,13 @@ export async function GET(req: Request) {
       popularServices: popularServicesAgg.map(s => ({ name: s.name, count: Number(s.count) })),
       topStaff: topStaffAgg.map(s => ({ name: s.name, count: Number(s.count) })),
       dailyBookings: dailyBookingsAgg.map(d => ({ date: d.date, count: Number(d.count) })),
-      weeklyStats
+      weeklyStats,
+      // AI Analytics
+      ai: {
+        customerBehavior,
+        predictions,
+        customerSegments
+      }
     })
   } catch (error) {
     console.error('Error fetching analytics:', error)
