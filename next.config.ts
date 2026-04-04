@@ -4,8 +4,8 @@ const nextConfig: NextConfig = {
   // Turbopack ile uyumsuz paketleri external olarak isaretle
   serverExternalPackages: ['iyzipay'],
 
-  // Static sayfa optimizasyonu
-  output: 'standalone',
+  // NOT: output: 'standalone' kullanılmıyor - Next.js 16 + Turbopack ile
+  // API endpoint'lerinde 500 hatasına neden oluyor
 
   // Görsel optimizasyonu
   images: {
