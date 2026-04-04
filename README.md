@@ -209,3 +209,4 @@ Bu proje ticari kullanım için lisanslıdır.
 ---
 
 <p align="center">© 2026 RandevuAI - Tüm hakları saklıdır.</p>
+// Trigger deploy
