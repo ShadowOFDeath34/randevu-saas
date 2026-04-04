@@ -5,7 +5,7 @@ import { db } from '@/lib/db'
 // GET /api/triggers/[id] - Get single trigger
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth()
@@ -14,7 +14,7 @@ export async function GET(
     }
 
     const tenantId = session.user.tenantId
-    const { id } = params
+    const { id } = await params
 
     const trigger = await db.campaignTrigger.findFirst({
       where: { id, tenantId },
@@ -49,7 +49,7 @@ export async function GET(
 // PATCH /api/triggers/[id] - Update trigger
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth()
@@ -58,7 +58,7 @@ export async function PATCH(
     }
 
     const tenantId = session.user.tenantId
-    const { id } = params
+    const { id } = await params
     const body = await req.json()
 
     const existing = await db.campaignTrigger.findFirst({
@@ -105,7 +105,7 @@ export async function PATCH(
 // DELETE /api/triggers/[id] - Delete trigger
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth()
@@ -114,7 +114,7 @@ export async function DELETE(
     }
 
     const tenantId = session.user.tenantId
-    const { id } = params
+    const { id } = await params
 
     const existing = await db.campaignTrigger.findFirst({
       where: { id, tenantId }
@@ -136,7 +136,7 @@ export async function DELETE(
 // POST /api/triggers/[id]/execute - Manually execute trigger
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth()
@@ -145,7 +145,7 @@ export async function POST(
     }
 
     const tenantId = session.user.tenantId
-    const { id } = params
+    const { id } = await params
 
     const trigger = await db.campaignTrigger.findFirst({
       where: { id, tenantId }
