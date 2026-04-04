@@ -22,7 +22,8 @@ import {
   CreditCard,
   Sparkles,
   MessageSquare,
-  Star
+  Star,
+  Workflow
 } from 'lucide-react'
 import { db } from '@/lib/db'
 
@@ -65,6 +66,7 @@ export default async function DashboardLayout({
       title: 'Pazarlama (Yapay Zeka)',
       items: [
         { href: '/campaigns', icon: Sparkles, label: 'Akıllı Kampanyalar' },
+        { href: '/triggers', icon: Workflow, label: 'Otomatik Tetikleyiciler' },
       ]
     },
     {

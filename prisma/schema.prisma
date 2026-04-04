@@ -84,6 +84,7 @@ model Tenant {
   subscription      Subscription?
   auditLogs         AuditLog[]
   campaigns         Campaign[]
+  campaignTriggers  CampaignTrigger[]
 }
 
 model User {
@@ -485,4 +486,77 @@ model BookingReminder {
 
   @@index([bookingId, type])
   @@index([sentAt])
+}
+
+// -----------------------------------------------------------------
+// AUTOMATED CAMPAIGN TRIGGERS (Otomatik Kampanya Tetikleyicileri)
+// -----------------------------------------------------------------
+
+enum TriggerType {
+  booking_confirmed
+  booking_cancelled
+  booking_no_show
+  booking_completed
+  appointment_reminder_24h
+  appointment_reminder_2h
+  customer_birthday
+  customer_at_risk
+  customer_inactive_30d
+  customer_inactive_60d
+}
+
+enum TriggerAction {
+  send_sms
+  send_email
+  send_whatsapp
+  send_notification
+}
+
+enum TriggerStatus {
+  active
+  paused
+  draft
+}
+
+model CampaignTrigger {
+  id          String        @id @default(cuid())
+  tenantId    String
+  tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  triggerType TriggerType
+  action      TriggerAction
+  templateId  String?       // NotificationTemplate ID (optional)
+  conditions  String?       // JSON: { minBookingCount: 5, segment: "vip", etc. }
+  delayMinutes Int         @default(0)  // Tetikleyicinin çalışması için bekleme süresi (0 = hemen)
+  status      TriggerStatus @default(active)
+  lastTriggeredAt DateTime?
+  triggerCount    Int       @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  // İlişki: Trigger tetiklendiğinde oluşturulan loglar
+  logs TriggerExecutionLog[]
+
+  @@index([tenantId, status])
+  @@index([tenantId, triggerType])
+  @@index([status, triggerType])
+  @@index([tenantId, createdAt])
+}
+
+model TriggerExecutionLog {
+  id          String   @id @default(cuid())
+  triggerId   String
+  trigger     CampaignTrigger @relation(fields: [triggerId], references: [id], onDelete: Cascade)
+  tenantId    String
+  customerId  String?
+  bookingId   String?
+  status      String   // success, failed, pending
+  payload     String?  // Gönderilen mesaj içeriği
+  errorMessage String?
+  executedAt  DateTime @default(now())
+
+  @@index([triggerId, executedAt])
+  @@index([tenantId, executedAt])
+  @@index([status, executedAt])
 }
