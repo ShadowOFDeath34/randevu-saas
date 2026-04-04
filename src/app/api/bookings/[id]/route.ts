@@ -5,6 +5,7 @@ import { BookingStatus } from '@prisma/client'
 import { sendSMS } from '@/lib/sms'
 import { sendBookingStatusEmail } from '@/lib/email'
 import { smsTemplateService } from '@/lib/sms/template-service'
+import { addPoints, getOrCreateLoyaltyConfig } from '@/lib/loyalty/service'
 
 // GET - Tekil booking getir
 export async function GET(
@@ -163,6 +164,24 @@ export async function PATCH(
                 tenantId: session.user.tenantId,
                 bookingId: id
               }).catch(err => console.error('Review SMS sending failed:', err))
+            }
+          }
+
+          // Loyalty puan ekle - randevu tamamlandığında
+          if (existingBooking.customerId) {
+            try {
+              const config = await getOrCreateLoyaltyConfig(session.user.tenantId)
+              await addPoints(
+                session.user.tenantId,
+                existingBooking.customerId,
+                config.pointsPerCompletion,
+                'EARNED_COMPLETION',
+                `Randevu tamamlandı: ${existingBooking.service.name}`,
+                id
+              )
+            } catch (loyaltyErr) {
+              console.error('Loyalty completion points error:', loyaltyErr)
+              // Loyalty hatası booking'i etkilemesin
             }
           }
         } catch (reviewError) {

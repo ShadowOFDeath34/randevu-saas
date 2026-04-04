@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { createHash } from 'crypto'
+import { addPoints, getOrCreateLoyaltyConfig } from '@/lib/loyalty/service'
 
 // CRITICAL FIX: Secure review token oluşturma
 function createReviewToken(bookingId: string, tenantId: string): string {
@@ -121,6 +122,24 @@ export async function POST(req: Request) {
           isPublished: false // Moderasyon için
         }
       })
+    }
+
+    // Loyalty puan ekle - değerlendirme yapıldığında
+    if (booking.customerId) {
+      try {
+        const config = await getOrCreateLoyaltyConfig(booking.tenantId)
+        await addPoints(
+          booking.tenantId,
+          booking.customerId,
+          config.pointsPerReview,
+          'EARNED_REVIEW',
+          `Değerlendirme yapıldı: ${booking.serviceId}`,
+          booking.id
+        )
+      } catch (loyaltyErr) {
+        console.error('Loyalty review points error:', loyaltyErr)
+        // Loyalty hatası review işlemini etkilemesin
+      }
     }
 
     return NextResponse.json({ success: true })

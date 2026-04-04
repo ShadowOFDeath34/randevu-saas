@@ -5,6 +5,7 @@ import { Prisma, BookingStatus } from '@prisma/client'
 import { sendSMS } from '@/lib/sms'
 import { sendBookingConfirmationEmail } from '@/lib/email'
 import { smsTemplateService } from '@/lib/sms/template-service'
+import { addPoints, getOrCreateLoyaltyConfig } from '@/lib/loyalty/service'
 
 export async function GET(req: Request) {
   try {
@@ -227,6 +228,24 @@ export async function POST(req: Request) {
         businessName: booking.tenant?.name || 'RandevuAI',
         confirmationCode: booking.id.slice(-6).toUpperCase()
       }).catch(err => console.error('Email sending failed:', err))
+    }
+
+    // Loyalty puan ekle (async, blocking değil)
+    if (booking.customerId) {
+      try {
+        const config = await getOrCreateLoyaltyConfig(session.user.tenantId)
+        await addPoints(
+          session.user.tenantId,
+          booking.customerId,
+          config.pointsPerBooking,
+          'EARNED_BOOKING',
+          `Randevu oluşturuldu: ${booking.service.name}`,
+          booking.id
+        )
+      } catch (err) {
+        console.error('Loyalty points error:', err)
+        // Loyalty hatası booking'i etkilemesin
+      }
     }
 
     return NextResponse.json(booking)
