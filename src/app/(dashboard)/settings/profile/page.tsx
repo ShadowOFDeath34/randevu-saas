@@ -34,7 +34,7 @@ export default function ProfileSettingsPage() {
       const response = await fetch('/api/settings/profile')
       if (response.ok) {
         const data = await response.json()
-        setProfile(data.profile)
+        setProfile(data)
       }
     } catch (error) {
       console.error('Error fetching profile:', error)
