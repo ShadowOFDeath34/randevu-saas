@@ -91,6 +91,10 @@ model Tenant {
   ServicePriceHistory   ServicePriceHistory[]
   PricingAnalytics      PricingAnalytics[]
   branches              Branch[]
+  staffPerformanceConfig StaffPerformanceConfig?
+  staffBonusTargets    StaffBonusTarget[]
+  staffBonuses         StaffBonus[]
+  staffPerformanceLogs StaffPerformanceLog[]
 }
 
 model User {
@@ -176,6 +180,9 @@ model Staff {
   branchAssignments StaffBranchAssignment[]
   Branch            Branch?                 @relation(fields: [branchId], references: [id])
   branchId          String?
+  bonusTargets      StaffBonusTarget[]
+  bonuses           StaffBonus[]
+  performanceLogs   StaffPerformanceLog[]
 
   @@unique([tenantId, fullName])
   @@index([tenantId, isActive])
@@ -1037,4 +1044,180 @@ model BranchPermission {
   @@unique([userId, branchId])
   @@index([tenantId, userId])
   @@index([tenantId, branchId])
+}
+
+// -----------------------------------------------------------------
+// PHASE 4: STAFF PERFORMANCE BONUS SYSTEM
+// -----------------------------------------------------------------
+
+enum BonusPeriod {
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+}
+
+enum BonusMetricType {
+  BOOKING_COUNT      // Tamamlanan randevu sayısı
+  REVENUE           // Toplam gelir
+  CUSTOMER_RATING   // Müşteri değerlendirmesi
+  UPSELL_RATE       // Ekstra satış oranı
+  RETENTION_RATE    // Müşteri sadakati
+  ATTENDANCE        // Devamlılık
+}
+
+enum BonusCalculationType {
+  FIXED_AMOUNT      // Sabit tutar
+  PERCENTAGE      // Gelirin yüzdesi
+  TIERED          // Kademeli (hedeflere göre)
+}
+
+enum BonusStatus {
+  PENDING      // Bekliyor
+  CALCULATED   // Hesaplandı
+  APPROVED     // Onaylandı
+  PAID         // Ödendi
+  CANCELLED    // İptal edildi
+}
+
+// Hedef yapılandırma şablonu
+model StaffPerformanceConfig {
+  id          String   @id @default(cuid())
+  tenantId    String   @unique
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Genel ayarlar
+  isEnabled       Boolean @default(false)
+  defaultPeriod   BonusPeriod @default(MONTHLY)
+  calculationDay  Int      @default(1) // Ayın hangi günü hesaplansın
+
+  // Varsayılan prim oranları
+  baseBonusPercentage Float @default(5) // Gelirin %5'i
+  minBookingCount     Int   @default(50) // Minimum 50 randevu
+  minCustomerRating   Float @default(4.0) // Minimum 4.0 puan
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Personel özel hedef ve prim yapılandırması
+model StaffBonusTarget {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  staffId  String
+  staff    Staff  @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  // Hedef dönemi
+  period    BonusPeriod
+  year      Int
+  month     Int?      // WEEKLY için null
+  week      Int?      // MONTHLY/QUARTERLY için null
+  quarter   Int?      // MONTHLY/WEEKLY için null
+
+  // Hedefler
+  targetBookingCount    Int?
+  targetRevenue         Float?
+  targetCustomerRating  Float?
+  targetUpsellRate      Float?
+
+  // Prim yapılandırması
+  calculationType   BonusCalculationType @default(TIERED)
+  baseAmount        Float                @default(0)
+  percentageRate    Float                @default(0) // Yüzde hesaplama için
+
+  // Kademeli prim yapılandırması (JSON)
+  // [{ "min": 0, "max": 50, "bonus": 500 }, { "min": 51, "max": 100, "bonus": 1000 }]
+  tierConfig        String?
+
+  // Durum
+  isActive          Boolean @default(true)
+  isCustom          Boolean @default(false) // Varsayılan hedef yerine özel
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Hesaplanan primler
+  bonuses StaffBonus[]
+
+  @@unique([staffId, period, year, month, week])
+  @@index([tenantId, staffId])
+  @@index([tenantId, period, year])
+}
+
+// Hesaplanan prim kayıtları
+model StaffBonus {
+  id              String      @id @default(cuid())
+  tenantId        String
+  tenant          Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  staffId         String
+  staff           Staff       @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  targetId        String
+  target          StaffBonusTarget @relation(fields: [targetId], references: [id], onDelete: Cascade)
+
+  // Dönem bilgisi
+  period          BonusPeriod
+  year            Int
+  month           Int?
+  week            Int?
+
+  // Gerçekleşen metrikler
+  actualBookingCount    Int
+  actualRevenue         Float
+  actualCustomerRating  Float
+  actualUpsellRate      Float
+  actualAttendanceRate  Float
+
+  // Hesaplanan prim
+  baseSalary            Float      @default(0) // Temel maaş (opsiyonel)
+  calculatedBonus       Float
+  bonusPercentage       Float      // Prim oranı (yüzde olarak)
+
+  // Durum
+  status                BonusStatus @default(PENDING)
+  approvedBy            String?
+  approvedAt            DateTime?
+  paidAt                DateTime?
+  paymentReference      String?
+
+  // Notlar
+  notes                 String?
+  calculationBreakdown  String?    // JSON: Detaylı hesaplama
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([staffId, period, year, month, week])
+  @@index([tenantId, period, year, month])
+  @@index([tenantId, staffId])
+  @@index([status])
+}
+
+// Günlük/haftalık performans kayıtları
+model StaffPerformanceLog {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  staffId     String
+  staff       Staff    @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  // Tarih
+  date        String   // "2025-01-15"
+
+  // Günlük metrikler
+  bookingsCompleted     Int      @default(0)
+  bookingsCancelled     Int      @default(0)
+  revenueGenerated      Float    @default(0)
+  customersServed       Int      @default(0)
+  averageRating         Float?
+  upsellAmount          Float    @default(0)
+
+  // Çalışma saatleri
+  hoursWorked           Float?   @default(0)
+  isPresent             Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+
+  @@unique([staffId, date])
+  @@index([tenantId, staffId, date])
+  @@index([tenantId, date])
 }

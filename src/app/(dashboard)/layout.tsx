@@ -25,7 +25,8 @@ import {
   Star,
   Workflow,
   TrendingUp,
-  Building2
+  Building2,
+  Trophy
 } from 'lucide-react'
 import { db } from '@/lib/db'
 
@@ -63,6 +64,7 @@ export default async function DashboardLayout({
         { href: '/staff', icon: Briefcase, label: 'Personel' },
         { href: '/services', icon: Scissors, label: 'Hizmetler' },
         { href: '/staff/schedule', icon: Clock, label: 'Çizelge' },
+        { href: '/staff/bonuses', icon: Trophy, label: 'Prim Sistemi' },
       ]
     },
     {
