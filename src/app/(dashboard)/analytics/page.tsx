@@ -1,224 +1,494 @@
 'use client'
 
-import { useState } from 'react'
-import { useAnalyticsStats } from '@/hooks/use-analytics'
-import { Skeleton } from '@/components/ui/skeleton'
+import { useEffect, useState } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
+  Cell
+} from 'recharts'
 import {
   TrendingUp,
   TrendingDown,
-  Calendar,
   Users,
-  DollarSign,
-  ArrowUp,
+  Calendar,
+  Clock,
+  BrainCircuit,
+  AlertCircle,
+  Crown,
+  UserPlus,
+  UserMinus
 } from 'lucide-react'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+
+interface AnalyticsData {
+  totalBookings: number
+  completedBookings: number
+  cancelledBookings: number
+  noShowBookings: number
+  totalRevenue: number
+  totalCustomers: number
+  repeatCustomers: number
+  popularServices: { name: string; count: number }[]
+  topStaff: { name: string; count: number }[]
+  dailyBookings: { date: string; count: number }[]
+  weeklyStats: { day: string; bookings: number; revenue: number }[]
+  ai: {
+    customerBehavior: {
+      peakHours: { hour: number; bookings: number }[]
+      peakDays: { day: string; bookings: number }[]
+      avgBookingLeadTime: number
+      customerRetention: {
+        newCustomers: number
+        returningCustomers: number
+        retentionRate: number
+      }
+    }
+    predictions: {
+      nextWeek: {
+        expectedBookings: number
+        confidence: number
+        trend: 'up' | 'down' | 'stable'
+      }
+      revenue: {
+        expectedRevenue: number
+        confidence: number
+        trend: 'up' | 'down' | 'stable'
+      }
+      recommendations: string[]
+    }
+    customerSegments: {
+      vip: { count: number; avgSpend: number }
+      regular: { count: number; avgSpend: number }
+      atRisk: { count: number; lastBooking: string }
+      new: { count: number; conversionRate: number }
+    }
+  }
+}
+
+const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
 
 export default function AnalyticsPage() {
-  const [period, setPeriod] = useState<'week' | 'month' | 'year'>('month')
-  const { data: stats, isLoading, error } = useAnalyticsStats(period)
+  const [data, setData] = useState<AnalyticsData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [period, setPeriod] = useState('month')
 
-  if (isLoading) {
+  useEffect(() => {
+    fetchAnalytics()
+  }, [period])
+
+  const fetchAnalytics = async () => {
+    try {
+      const response = await fetch(`/api/analytics?period=${period}`)
+      if (!response.ok) throw new Error('Failed to fetch')
+      const result = await response.json()
+      setData(result)
+    } catch (error) {
+      console.error('Error:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (loading) {
     return (
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <Skeleton className="h-8 w-32" />
-          <Skeleton className="h-10 w-64" />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-40 rounded-xl" />
+      <div className="space-y-6 p-6">
+        <Skeleton className="h-8 w-48" />
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <Skeleton key={i} className="h-32" />
           ))}
         </div>
-        <div className="grid lg:grid-cols-2 gap-6">
-          <Skeleton className="h-80 rounded-xl" />
-          <Skeleton className="h-80 rounded-xl" />
-        </div>
       </div>
     )
   }
 
-  if (error || !stats) {
-    return (
-      <div className="text-center py-12 text-red-600">
-        Veri yüklenirken hata oluştu. Lütfen sayfayı yenileyin.
-      </div>
-    )
-  }
+  if (!data) return null
 
-  const completionRate = stats.totalBookings > 0
-    ? Math.round((stats.completedBookings / stats.totalBookings) * 100)
-    : 0
-
-  const noShowRate = stats.totalBookings > 0
-    ? Math.round((stats.noShowBookings / stats.totalBookings) * 100)
-    : 0
+  const { ai } = data
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">İstatistikler</h1>
-
+    <div className="space-y-6 p-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <BrainCircuit className="h-8 w-8 text-primary" />
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">AI Analytics</h1>
+            <p className="text-muted-foreground">
+              Yapay zeka destekli detaylı analiz ve tahminler
+            </p>
+          </div>
+        </div>
         <div className="flex gap-2">
-          {(['week', 'month', 'year'] as const).map((p) => (
+          {['week', 'month', 'year'].map((p) => (
             <button
               key={p}
-              onClick={() => setPeriod(p)}
+              onClick={() => {
+                setPeriod(p)
+                setLoading(true)
+              }}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 period === p
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted hover:bg-muted/80'
               }`}
             >
-              {p === 'week' ? 'Bu Hafta' : p === 'month' ? 'Bu Ay' : 'Bu Yıl'}
+              {p === 'week' && 'Son 7 Gün'}
+              {p === 'month' && 'Son 30 Gün'}
+              {p === 'year' && 'Son 1 Yıl'}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-6 rounded-xl border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Toplam Randevu</p>
-              <p className="text-3xl font-bold text-gray-900 mt-1">{stats.totalBookings}</p>
-            </div>
-            <div className="p-3 bg-blue-100 rounded-lg">
-              <Calendar className="w-6 h-6 text-blue-600" />
-            </div>
-          </div>
-          <div className="mt-4 flex items-center gap-2 text-sm">
-            <span className="text-green-600 flex items-center gap-1">
-              <ArrowUp className="w-4 h-4" /> {completionRate}%
-            </span>
-            <span className="text-gray-500">tamamlandı</span>
-          </div>
-        </div>
+      <Tabs defaultValue="overview" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4 lg:w-auto">
+          <TabsTrigger value="overview">Genel Bakış</TabsTrigger>
+          <TabsTrigger value="ai-predictions">AI Tahminler</TabsTrigger>
+          <TabsTrigger value="customers">Müşteri Analizi</TabsTrigger>
+          <TabsTrigger value="trends">Trendler</TabsTrigger>
+        </TabsList>
 
-        <div className="bg-white p-6 rounded-xl border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Toplam Gelir</p>
-              <p className="text-3xl font-bold text-gray-900 mt-1">{stats.totalRevenue.toLocaleString('tr-TR')}₺</p>
-            </div>
-            <div className="p-3 bg-green-100 rounded-lg">
-              <DollarSign className="w-6 h-6 text-green-600" />
-            </div>
-          </div>
-          <div className="mt-4 flex items-center gap-2 text-sm">
-            <span className="text-green-600 flex items-center gap-1">
-              <TrendingUp className="w-4 h-4" /> +12%
-            </span>
-            <span className="text-gray-500">geçen döneme göre</span>
-          </div>
-        </div>
+        <TabsContent value="overview" className="space-y-6">
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Toplam Randevu</CardTitle>
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{data.totalBookings}</div>
+                <p className="text-xs text-muted-foreground">
+                  {data.completedBookings} tamamlandı
+                </p>
+              </CardContent>
+            </Card>
 
-        <div className="bg-white p-6 rounded-xl border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Toplam Müşteri</p>
-              <p className="text-3xl font-bold text-gray-900 mt-1">{stats.totalCustomers}</p>
-            </div>
-            <div className="p-3 bg-purple-100 rounded-lg">
-              <Users className="w-6 h-6 text-purple-600" />
-            </div>
-          </div>
-          <div className="mt-4 flex items-center gap-2 text-sm">
-            <span className="text-green-600 flex items-center gap-1">
-              <ArrowUp className="w-4 h-4" /> {stats.repeatCustomers}
-            </span>
-            <span className="text-gray-500">tekrar gelen</span>
-          </div>
-        </div>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Gelir</CardTitle>
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {data.totalRevenue.toLocaleString('tr-TR')} ₺
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Tamamlanan randevulardan
+                </p>
+              </CardContent>
+            </Card>
 
-        <div className="bg-white p-6 rounded-xl border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">No-Show Oranı</p>
-              <p className="text-3xl font-bold text-gray-900 mt-1">{noShowRate}%</p>
-            </div>
-            <div className="p-3 bg-red-100 rounded-lg">
-              <TrendingDown className="w-6 h-6 text-red-600" />
-            </div>
-          </div>
-          <div className="mt-4 flex items-center gap-2 text-sm">
-            <span className="text-gray-500">{stats.noShowBookings} randevu</span>
-          </div>
-        </div>
-      </div>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Müşteri Tutma</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {ai.customerBehavior.customerRetention.retentionRate}%
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {ai.customerBehavior.customerRetention.returningCustomers} tekrar eden
+                </p>
+              </CardContent>
+            </Card>
 
-      {/* Charts Row */}
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* Popular Services */}
-        <div className="bg-white p-6 rounded-xl border border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">En Popüler Hizmetler</h2>
-          <div className="space-y-4">
-            {stats.popularServices.slice(0, 5).map((service, index) => (
-              <div key={service.name} className="flex items-center gap-4">
-                <span className="w-6 h-6 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-sm font-medium">
-                  {index + 1}
-                </span>
-                <div className="flex-1">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="font-medium text-gray-900">{service.name}</span>
-                    <span className="text-sm text-gray-500">{service.count} randevu</span>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">VIP Müşteri</CardTitle>
+                <Crown className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {ai.customerSegments.vip.count}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Ort. {ai.customerSegments.vip.avgSpend.toLocaleString('tr-TR')} ₺
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Weekly Stats Chart */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Haftalık Randevu ve Gelir</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={data.weeklyStats}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="day" />
+                  <YAxis yAxisId="left" />
+                  <YAxis yAxisId="right" orientation="right" />
+                  <Tooltip />
+                  <Bar yAxisId="left" dataKey="bookings" fill="#3b82f6" name="Randevu" />
+                  <Bar yAxisId="right" dataKey="revenue" fill="#10b981" name="Gelir (₺)" />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="ai-predictions" className="space-y-6">
+          {/* AI Predictions */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card className="bg-gradient-to-br from-primary/5 to-primary/10">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BrainCircuit className="h-5 w-5" />
+                  Gelecek Hafta Tahmini
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-3xl font-bold">
+                      {ai.predictions.nextWeek.expectedBookings}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Beklenen Randevu
+                    </div>
                   </div>
-                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-indigo-600 rounded-full"
-                      style={{ width: `${(service.count / stats.popularServices[0]?.count) * 100}%` }}
+                  <div className={`flex items-center gap-1 ${
+                    ai.predictions.nextWeek.trend === 'up'
+                      ? 'text-green-500'
+                      : ai.predictions.nextWeek.trend === 'down'
+                      ? 'text-red-500'
+                      : 'text-yellow-500'
+                  }`}>
+                    {ai.predictions.nextWeek.trend === 'up' && <TrendingUp className="h-6 w-6" />}
+                    {ai.predictions.nextWeek.trend === 'down' && <TrendingDown className="h-6 w-6" />}
+                    {ai.predictions.nextWeek.trend === 'stable' && <Clock className="h-6 w-6" />}
+                    <span className="font-medium">
+                      {ai.predictions.nextWeek.trend === 'up' && 'Yükseliş'}
+                      {ai.predictions.nextWeek.trend === 'down' && 'Düşüş'}
+                      {ai.predictions.nextWeek.trend === 'stable' && 'Stabil'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="text-sm text-muted-foreground">
+                  Güven: %{ai.predictions.nextWeek.confidence}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-green-500/5 to-green-500/10">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5" />
+                  Gelir Tahmini
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-3xl font-bold">
+                      {ai.predictions.revenue.expectedRevenue.toLocaleString('tr-TR')} ₺
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Beklenen Gelir
+                    </div>
+                  </div>
+                  <div className={`flex items-center gap-1 ${
+                    ai.predictions.revenue.trend === 'up'
+                      ? 'text-green-500'
+                      : ai.predictions.revenue.trend === 'down'
+                      ? 'text-red-500'
+                      : 'text-yellow-500'
+                  }`}>
+                    {ai.predictions.revenue.trend === 'up' && <TrendingUp className="h-6 w-6" />}
+                    {ai.predictions.revenue.trend === 'down' && <TrendingDown className="h-6 w-6" />}
+                    {ai.predictions.revenue.trend === 'stable' && <Clock className="h-6 w-6" />}
+                  </div>
+                </div>
+
+                <div className="text-sm text-muted-foreground">
+                  Güven: %{ai.predictions.revenue.confidence}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* AI Recommendations */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BrainCircuit className="h-5 w-5 text-primary" />
+                AI Önerileri
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {ai.predictions.recommendations.length > 0 ? (
+                ai.predictions.recommendations.map((rec, i) => (
+                  <Alert key={i} className="bg-primary/5">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{rec}</AlertDescription>
+                  </Alert>
+                ))
+              ) : (
+                <p className="text-muted-foreground text-center py-4">
+                  Şu an için öneri bulunmuyor
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="customers" className="space-y-6">
+          {/* Customer Segments */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card className="bg-yellow-500/10">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">VIP Müşteriler</CardTitle>
+                <Crown className="h-4 w-4 text-yellow-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{ai.customerSegments.vip.count}</div>
+                <p className="text-xs text-muted-foreground">
+                  Ort. {ai.customerSegments.vip.avgSpend.toLocaleString('tr-TR')} ₺ harcama
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-blue-500/10">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Düzenli Müşteriler</CardTitle>
+                <Users className="h-4 w-4 text-blue-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{ai.customerSegments.regular.count}</div>
+                <p className="text-xs text-muted-foreground">
+                  Ort. {ai.customerSegments.regular.avgSpend.toLocaleString('tr-TR')} ₺ harcama
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-red-500/10">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Riskli Müşteriler</CardTitle>
+                <UserMinus className="h-4 w-4 text-red-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{ai.customerSegments.atRisk.count}</div>
+                <p className="text-xs text-muted-foreground">
+                  60 gündür görmedik
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-green-500/10">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Yeni Müşteriler</CardTitle>
+                <UserPlus className="h-4 w-4 text-green-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{ai.customerSegments.new.count}</div>
+                <p className="text-xs text-muted-foreground">
+                  %{ai.customerSegments.new.conversionRate} dönüşüm oranı
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Peak Hours Chart */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Yoğun Saatler</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={ai.customerBehavior.peakHours}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis
+                    dataKey="hour"
+                    tickFormatter={(h) => `${h}:00`}
+                  />
+                  <YAxis />
+                  <Tooltip
+                    labelFormatter={(h) => `${h}:00`}
+                  />
+                  <Bar dataKey="bookings" fill="#3b82f6" />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="trends" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Popüler Hizmetler</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={data.popularServices.slice(0, 5)}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) =>
+                        `${name}: ${(percent * 100).toFixed(0)}%`
+                      }
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="count"
+                    >
+                      {data.popularServices.slice(0, 5).map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Günlük Randevu Trendi</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={data.dailyBookings}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis
+                      dataKey="date"
+                      tickFormatter={(d) => new Date(d).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })}
                     />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Top Staff */}
-        <div className="bg-white p-6 rounded-xl border border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">En Aktif Personel</h2>
-          <div className="space-y-4">
-            {stats.topStaff.slice(0, 5).map((staffMember) => (
-              <div key={staffMember.name} className="flex items-center gap-4">
-                <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center text-white font-medium">
-                  {staffMember.name.charAt(0)}
-                </div>
-                <div className="flex-1">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="font-medium text-gray-900">{staffMember.name}</span>
-                    <span className="text-sm text-gray-500">{staffMember.count} randevu</span>
-                  </div>
-                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full"
-                      style={{ width: `${(staffMember.count / stats.topStaff[0]?.count) * 100}%` }}
+                    <YAxis />
+                    <Tooltip
+                      labelFormatter={(d) => new Date(d).toLocaleDateString('tr-TR')}
                     />
-                  </div>
-                </div>
-              </div>
-            ))}
+                    <Line
+                      type="monotone"
+                      dataKey="count"
+                      stroke="#3b82f6"
+                      strokeWidth={2}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
           </div>
-        </div>
-      </div>
-
-      {/* Weekly Stats */}
-      <div className="bg-white p-6 rounded-xl border border-gray-200">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Haftalık Performans</h2>
-        <div className="grid grid-cols-7 gap-4">
-          {stats.weeklyStats.map((day) => (
-            <div key={day.day} className="text-center">
-              <p className="text-xs text-gray-500 mb-2">{day.day}</p>
-              <div className="h-24 flex flex-col justify-end">
-                <div
-                  className="bg-indigo-600 rounded-t mx-auto w-full"
-                  style={{ height: `${Math.min((day.bookings / 20) * 100, 100)}%`, minHeight: day.bookings > 0 ? '8px' : '0' }}
-                />
-              </div>
-              <p className="text-sm font-medium text-gray-900 mt-2">{day.bookings}</p>
-            </div>
-          ))}
-        </div>
-      </div>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
