@@ -4,6 +4,8 @@ import { db } from '@/lib/db'
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
+  console.log('Health check started')
+  console.log('DATABASE_URL exists:', !!process.env.DATABASE_URL)
   const checks = {
     status: 'ok',
     timestamp: new Date().toISOString(),
@@ -17,12 +19,15 @@ export async function GET() {
   // Database check
   const dbStart = Date.now()
   try {
+    console.log('Attempting database query...')
     await db.$queryRaw`SELECT 1`
+    console.log('Database query successful')
     checks.checks.database = {
       status: 'healthy',
       responseTime: Date.now() - dbStart
     }
   } catch (error) {
+    console.error('Database query failed:', error)
     checks.checks.database = {
       status: 'unhealthy',
       error: error instanceof Error ? error.message : 'Unknown error'
