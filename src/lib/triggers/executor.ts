@@ -65,7 +65,7 @@ export async function executeTrigger(
           customerId: customer.id,
           bookingId: context.bookingId,
           status: result.success ? 'success' : 'failed',
-          payload: result.payload,
+          payload: result.payload ? JSON.stringify(result.payload) : null,
           errorMessage: result.error
         }
       })
