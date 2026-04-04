@@ -1,33 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { sendSMS } from '@/lib/sms'
-
-// Rate limiting için basit memory store
-const rateLimitStore = new Map<string, { count: number; resetTime: number }>()
-
-function checkRateLimit(phone: string): boolean {
-  const now = Date.now()
-  const windowMs = 60 * 1000 // 1 dakika
-  const maxAttempts = 3 // 3 deneme
-
-  const record = rateLimitStore.get(phone)
-
-  if (!record || now > record.resetTime) {
-    rateLimitStore.set(phone, { count: 1, resetTime: now + windowMs })
-    return true
-  }
-
-  if (record.count >= maxAttempts) {
-    return false
-  }
-
-  record.count++
-  return true
-}
+import { smsTemplateService } from '@/lib/sms/template-service'
+import { checkIPRateLimit, checkPhoneRateLimit, defaultConfigs, createRateLimitResponse } from '@/lib/rate-limit'
 
 export async function POST(req: NextRequest) {
   try {
-    const { phone } = await req.json()
+    // 1. IP bazlı rate limiting (CRITICAL FIX)
+    const ipRateLimit = await checkIPRateLimit(req, {
+      windowMs: 15 * 60 * 1000,  // 15 dakika
+      maxRequests: 10  // 10 deneme
+    })
+
+    if (!ipRateLimit.success) {
+      return createRateLimitResponse(ipRateLimit)
+    }
+
+    const { phone, slug } = await req.json()
 
     if (!phone) {
       return NextResponse.json({ error: 'Telefon gerekli' }, { status: 400 })
@@ -41,15 +30,37 @@ export async function POST(req: NextRequest) {
 
     const cleanPhone = phone.replace(/\s/g, '')
 
-    // Rate limiting kontrolü
-    if (!checkRateLimit(cleanPhone)) {
+    // 2. Telefon bazlı rate limiting (CRITICAL FIX)
+    const phoneRateLimit = await checkPhoneRateLimit(cleanPhone, {
+      windowMs: 15 * 60 * 1000,  // 15 dakika
+      maxRequests: 3  // 3 deneme
+    })
+
+    if (!phoneRateLimit.success) {
       return NextResponse.json({
-        error: 'Çok fazla deneme. Lütfen 1 dakika sonra tekrar deneyin.'
+        error: 'Bu telefon numarası için çok fazla deneme. Lütfen 15 dakika sonra tekrar deneyin.'
       }, { status: 429 })
     }
 
+    // CRITICAL FIX: Tenant slug ile birlikte ara
+    let tenantId: string | undefined
+
+    if (slug) {
+      // Slug varsa tenant'ı bul
+      const tenant = await db.tenant.findUnique({
+        where: { slug }
+      })
+      if (!tenant) {
+        return NextResponse.json({ error: 'İşletme bulunamadı' }, { status: 404 })
+      }
+      tenantId = tenant.id
+    }
+
     const customer = await db.customer.findFirst({
-      where: { phone: cleanPhone },
+      where: {
+        phone: cleanPhone,
+        ...(tenantId && { tenantId }) // Tenant isolation
+      },
       include: {
         bookings: {
           where: {
@@ -89,8 +100,18 @@ export async function POST(req: NextRequest) {
       }
     })
 
+    // SMS Template sisteminden özelleştirilmiş mesaj al
+    const customerTenantId = customer.tenantId
+    const templateMessage = await smsTemplateService.formatVerificationCode(
+      customerTenantId,
+      {
+        code,
+        businessName: 'RandevuAI', // Public endpoint için generic isim
+      }
+    )
+
     // SMS gönder
-    const message = `RandevuAI dogrulama kodunuz: ${code}. Bu kod 5 dakika gecerlidir.`
+    const message = templateMessage || `RandevuAI dogrulama kodunuz: ${code}. Bu kod 5 dakika gecerlidir.`
     const smsResult = await sendSMS({
       phone: cleanPhone,
       message

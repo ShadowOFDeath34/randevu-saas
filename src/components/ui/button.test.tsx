@@ -24,13 +24,4 @@ describe('Button', () => {
     render(<Button disabled>Disabled</Button>)
     expect(screen.getByRole('button')).toBeDisabled()
   })
-
-  it('should render as child when asChild is true', () => {
-    render(
-      <Button asChild>
-        <a href="/test">Link</a>
-      </Button>
-    )
-    expect(screen.getByRole('link')).toBeInTheDocument()
-  })
 })

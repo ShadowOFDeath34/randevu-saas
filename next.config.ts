@@ -4,8 +4,8 @@ const nextConfig: NextConfig = {
   // Turbopack ile uyumsuz paketleri external olarak isaretle
   serverExternalPackages: ['iyzipay'],
 
-  // Static sayfa optimizasyonu
-  output: 'standalone',
+  // Static sayfa optimizasyonu - geçici olarak kaldırıldı
+  // output: 'standalone',
 
   // Görsel optimizasyonu
   images: {
@@ -32,7 +32,7 @@ const nextConfig: NextConfig = {
         source: '/api/:path*',
         headers: [
           { key: 'Access-Control-Allow-Credentials', value: 'true' },
-          { key: 'Access-Control-Allow-Origin', value: process.env.NEXT_PUBLIC_APP_URL || 'https://randevu-saas-pearl.vercel.app' },
+          { key: 'Access-Control-Allow-Origin', value: (process.env.NEXT_PUBLIC_APP_URL || 'https://randevu-saas-pearl.vercel.app').replace(/\n/g, '').trim() },
           { key: 'Access-Control-Allow-Methods', value: 'GET,DELETE,PATCH,POST,PUT,OPTIONS' },
           { key: 'Access-Control-Allow-Headers', value: 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization' },
           { key: 'Cache-Control', value: 'private, no-cache, no-store, must-revalidate' },

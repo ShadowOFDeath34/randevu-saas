@@ -1,13 +1,16 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import {
   cn,
   slugify,
   formatDate,
+  formatDateTime,
   formatTime,
   addMinutesToTime,
   timeToMinutes,
   minutesToTime,
   getDayName,
+  formatCurrency,
+  generateConfirmationCode,
 } from './utils'
 
 describe('cn (className merge)', () => {
@@ -83,5 +86,88 @@ describe('getDayName', () => {
     expect(getDayName(0)).toBe('Pazar')
     expect(getDayName(1)).toBe('Pazartesi')
     expect(getDayName(6)).toBe('Cumartesi')
+  })
+
+  it('should handle out of bounds indices', () => {
+    expect(getDayName(7)).toBeUndefined()
+    expect(getDayName(-1)).toBeUndefined()
+  })
+})
+
+describe('formatDateTime', () => {
+  it('should format date with time in Turkish format', () => {
+    const result = formatDateTime('2024-03-15T14:30:00')
+    expect(result).toContain('15.03.2024')
+    expect(result).toContain('14:30')
+  })
+
+  it('should handle Date object input', () => {
+    const result = formatDateTime(new Date('2024-03-15T14:30:00'))
+    expect(result).toContain('15.03.2024')
+  })
+})
+
+describe('formatCurrency', () => {
+  it('should format currency with Turkish Lira', () => {
+    expect(formatCurrency(100)).toContain('100')
+    expect(formatCurrency(1000)).toContain('1.000')
+  })
+
+  it('should round to nearest integer', () => {
+    expect(formatCurrency(100.4)).toContain('100')
+    expect(formatCurrency(100.5)).toContain('101')
+  })
+})
+
+describe('generateConfirmationCode', () => {
+  it('should generate uppercase hex code', async () => {
+    const code = await generateConfirmationCode()
+    expect(code).toMatch(/^[0-9A-F]+$/)
+    expect(code.length).toBeGreaterThanOrEqual(8)
+  })
+
+  it('should generate unique codes', async () => {
+    const codes = await Promise.all([
+      generateConfirmationCode(),
+      generateConfirmationCode(),
+      generateConfirmationCode(),
+    ])
+    const unique = new Set(codes)
+    expect(unique.size).toBe(3)
+  })
+})
+
+describe('slugify extended', () => {
+  it('should handle all Turkish characters', () => {
+    expect(slugify('İstanbul Çanakkale Şırnak')).toBe('istanbul-canakkale-sirnak')
+    expect(slugify('GÜNEŞ Özgür')).toBe('gunes-ozgur')
+    expect(slugify('ğüşiöç')).toBe('gusioc')
+  })
+
+  it('should trim and normalize multiple spaces', () => {
+    expect(slugify('  hello   world  ')).toBe('hello-world')
+  })
+
+  it('should handle empty string', () => {
+    expect(slugify('')).toBe('')
+  })
+
+  it('should handle numbers', () => {
+    expect(slugify('test-123-file')).toBe('test-123-file')
+    expect(slugify('version 2.0')).toBe('version-20')
+  })
+})
+
+describe('cn extended', () => {
+  it('should handle undefined and null', () => {
+    expect(cn(undefined, 'class', null)).toBe('class')
+  })
+
+  it('should handle array syntax', () => {
+    expect(cn(['class1', 'class2'])).toBe('class1 class2')
+  })
+
+  it('should deduplicate classes', () => {
+    expect(cn('p-4', 'p-6')).toBe('p-6')
   })
 })

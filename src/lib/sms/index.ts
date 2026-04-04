@@ -75,9 +75,23 @@ export async function sendSMS(params: SendSMSParams): Promise<SMSResult> {
 /**
  * OTP kodu gönder
  */
-export async function sendOTP(phone: string, code: string): Promise<SMSResult> {
-  const message = `RandevuAI doğrulama kodunuz: ${code}. Bu kod 5 dakika geçerlidir.`
-  return sendSMS({ phone, message })
+export async function sendOTP(phone: string, code: string, tenantId?: string): Promise<SMSResult> {
+  const { smsTemplateService } = await import('./template-service')
+  
+  let message: string
+  
+  if (tenantId) {
+    // Try to use custom template
+    const formatted = await smsTemplateService.formatVerificationCode(tenantId, { 
+      code, 
+      businessName: '' // Will be filled from business profile if needed
+    })
+    message = formatted || `RandevuAI doğrulama kodunuz: ${code}. Bu kod 5 dakika geçerlidir.`
+  } else {
+    message = `RandevuAI doğrulama kodunuz: ${code}. Bu kod 5 dakika geçerlidir.`
+  }
+  
+  return sendSMS({ phone, message, tenantId })
 }
 
 /**
@@ -99,13 +113,44 @@ export async function sendBookingReminder(
 ): Promise<SMSResult> {
   const { customerName, serviceName, date, time, businessName, hoursBefore } = bookingDetails
 
-  const message = `Merhaba ${customerName},\n\n` +
-    `${hoursBefore} saat sonra randevunuz var!\n\n` +
-    `Hizmet: ${serviceName}\n` +
-    `Tarih: ${date}\n` +
-    `Saat: ${time}\n` +
-    `Yer: ${businessName}\n\n` +
-    `Lütfen zamanında gelmeye özen gösterin.`
+  if (!tenantId) {
+    // Fallback to hardcoded template
+    const message = `Merhaba ${customerName},\n\n` +
+      `${hoursBefore} saat sonra randevunuz var!\n\n` +
+      `Hizmet: ${serviceName}\n` +
+      `Tarih: ${date}\n` +
+      `Saat: ${time}\n` +
+      `Yer: ${businessName}\n\n` +
+      `Lütfen zamanında gelmeye özen gösterin.`
+    return sendSMS({ phone, message, tenantId, bookingId, customerId })
+  }
+
+  // Use template service
+  const { smsTemplateService } = await import('./template-service')
+  
+  let message: string | null = null
+  
+  if (hoursBefore === 24) {
+    message = await smsTemplateService.formatBookingReminder24h(tenantId, {
+      customerName,
+      serviceName,
+      date,
+      time,
+      businessName
+    })
+  } else if (hoursBefore === 1) {
+    message = await smsTemplateService.formatBookingReminder1h(tenantId, {
+      customerName,
+      serviceName,
+      time,
+      businessName
+    })
+  }
+
+  // Fallback if template not found
+  if (!message) {
+    message = `Merhaba ${customerName}, ${hoursBefore} saat sonra randevunuz var: ${serviceName} - ${date} ${time}. ${businessName}`
+  }
 
   return sendSMS({ phone, message, tenantId, bookingId, customerId })
 }
@@ -130,23 +175,46 @@ export async function sendBookingConfirmation(
 ): Promise<SMSResult> {
   const { customerName, serviceName, date, time, staffName, businessName, confirmationCode } = bookingDetails
 
-  let message = `Merhaba ${customerName},\n\n` +
-    `Randevunuz onaylandı!\n\n` +
-    `Hizmet: ${serviceName}\n` +
-    `Tarih: ${date}\n` +
-    `Saat: ${time}\n`
+  if (!tenantId || !confirmationCode) {
+    // Fallback to hardcoded template
+    let message = `Merhaba ${customerName},\n\n` +
+      `Randevunuz onaylandı!\n\n` +
+      `Hizmet: ${serviceName}\n` +
+      `Tarih: ${date}\n` +
+      `Saat: ${time}\n`
 
-  if (staffName) {
-    message += `Personel: ${staffName}\n`
+    if (staffName) {
+      message += `Personel: ${staffName}\n`
+    }
+
+    message += `Yer: ${businessName}\n\n`
+
+    if (confirmationCode) {
+      message += `Onay Kodu: ${confirmationCode}\n\n`
+    }
+
+    message += `İyi günler dileriz!`
+
+    return sendSMS({ phone, message, tenantId, bookingId, customerId })
   }
 
-  message += `Yer: ${businessName}\n\n`
+  // Use template service
+  const { smsTemplateService } = await import('./template-service')
+  
+  const message = await smsTemplateService.formatBookingConfirmation(tenantId, {
+    customerName,
+    serviceName,
+    date,
+    time,
+    confirmationCode,
+    staffName,
+    businessName
+  })
 
-  if (confirmationCode) {
-    message += `Onay Kodu: ${confirmationCode}\n\n`
+  // Fallback if template not found
+  if (!message) {
+    return sendSMS({ phone, message: `Merhaba ${customerName}, ${serviceName} randevunuz ${date} ${time} için alındı. Onay kodunuz: ${confirmationCode}. ${businessName}`, tenantId, bookingId, customerId })
   }
-
-  message += `İyi günler dileriz!`
 
   return sendSMS({ phone, message, tenantId, bookingId, customerId })
 }

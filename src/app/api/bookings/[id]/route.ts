@@ -4,6 +4,7 @@ import { db } from '@/lib/db'
 import { BookingStatus } from '@prisma/client'
 import { sendSMS } from '@/lib/sms'
 import { sendBookingStatusEmail } from '@/lib/email'
+import { smsTemplateService } from '@/lib/sms/template-service'
 
 // GET - Tekil booking getir
 export async function GET(
@@ -63,7 +64,7 @@ export async function PATCH(
 
     const existingBooking = await db.booking.findFirst({
       where: { id, tenantId: session.user.tenantId, deletedAt: null },
-      include: { customer: true, service: true, staff: true }
+      include: { customer: true, service: true, staff: true, tenant: true }
     })
 
     if (!existingBooking) {
@@ -88,17 +89,86 @@ export async function PATCH(
       })
 
       // Müşteriye durum güncellemesi bildirimi
-      if (existingBooking.customer?.phone && ['confirmed', 'cancelled'].includes(status)) {
-        const message = status === 'confirmed'
+      if (existingBooking.customer?.phone && ['confirmed', 'cancelled', 'completed'].includes(status)) {
+        let message: string | null = null
+
+        if (status === 'cancelled') {
+          message = await smsTemplateService.formatBookingCancellation(
+            session.user.tenantId,
+            {
+              customerName: existingBooking.customer.fullName,
+              serviceName: existingBooking.service.name,
+              date: existingBooking.bookingDate,
+              time: existingBooking.startTime,
+              businessName: existingBooking.tenant?.name || 'RandevuAI',
+            }
+          )
+        }
+
+        const finalMessage = message || (status === 'confirmed'
           ? `Merhaba ${existingBooking.customer.fullName}, ${existingBooking.bookingDate} ${existingBooking.startTime} tarihli randevunuz onaylandi. Bizi tercih ettiginiz icin tesekkurler!`
-          : `Merhaba ${existingBooking.customer.fullName}, ${existingBooking.bookingDate} ${existingBooking.startTime} tarihli randevunuz iptal edildi. Daha fazla bilgi icin bizi arayabilirsiniz.`
+          : status === 'completed'
+          ? `Merhaba ${existingBooking.customer.fullName}, ${existingBooking.service.name} hizmetimizi tamamladiniz. Degerlendirmenizi bekliyoruz!`
+          : `Merhaba ${existingBooking.customer.fullName}, ${existingBooking.bookingDate} ${existingBooking.startTime} tarihli randevunuz iptal edildi. Daha fazla bilgi icin bizi arayabilirsiniz.`)
 
         sendSMS({
           phone: existingBooking.customer.phone,
-          message,
+          message: finalMessage,
           tenantId: session.user.tenantId,
           bookingId: id
         }).catch(err => console.error('Status SMS sending failed:', err))
+      }
+
+      // Randevu tamamlandığında ReviewRequest oluştur ve değerlendirme SMS'i gönder
+      if (status === 'completed' && existingBooking.customer) {
+        try {
+          // Mevcut review request var mı kontrol et
+          const existingReviewRequest = await db.reviewRequest.findFirst({
+            where: { bookingId: id }
+          })
+
+          if (!existingReviewRequest) {
+            // Review request oluştur
+            await db.reviewRequest.create({
+              data: {
+                tenantId: session.user.tenantId,
+                bookingId: id,
+                customerId: existingBooking.customerId,
+                channel: 'sms',
+                status: 'pending',
+              }
+            })
+
+            // Review link'i oluştur (token: sadece bookingId)
+            const token = Buffer.from(id).toString('base64')
+            const reviewLink = `${process.env.NEXT_PUBLIC_APP_URL || 'https://app.randevuai.com'}/review/${token}`
+
+            // Değerlendirme SMS'i gönder
+            if (existingBooking.customer.phone) {
+              const reviewMessage = await smsTemplateService.formatReviewRequest(
+                session.user.tenantId,
+                {
+                  customerName: existingBooking.customer.fullName,
+                  serviceName: existingBooking.service.name,
+                  businessName: existingBooking.tenant?.name || 'RandevuAI',
+                  reviewLink,
+                }
+              )
+
+              const message = reviewMessage || `Merhaba ${existingBooking.customer.fullName}, ${existingBooking.service.name} hizmetimizi degerlendirmek icin tiklayin: ${reviewLink}`
+
+              sendSMS({
+                phone: existingBooking.customer.phone,
+                message,
+                tenantId: session.user.tenantId,
+                bookingId: id
+              }).catch(err => console.error('Review SMS sending failed:', err))
+            }
+          }
+        } catch (reviewError) {
+          console.error('Review request creation error:', reviewError)
+          // Review oluşturma hatası booking işlemini engellememeli
+        }
       }
 
       if (existingBooking.customer?.email && ['confirmed', 'cancelled'].includes(status)) {
@@ -181,7 +251,8 @@ export async function PATCH(
         include: {
           customer: true,
           service: true,
-          staff: true
+          staff: true,
+          tenant: true
         }
       })
 
@@ -228,7 +299,18 @@ export async function PATCH(
       newStaffId !== existingBooking.staffId
 
     if (hasMajorChanges && updatedBooking.customer?.phone) {
-      const message = `Merhaba ${updatedBooking.customer.fullName}, randevunuz guncellendi. Yeni bilgiler: ${newBookingDate} ${newStartTime}, ${updatedBooking.staff.fullName}. Bizi tercih ettiginiz icin tesekkurler!`
+      const updateMessage = await smsTemplateService.formatBookingUpdate(
+        session.user.tenantId,
+        {
+          customerName: updatedBooking.customer.fullName,
+          serviceName: updatedBooking.service.name,
+          date: newBookingDate,
+          time: newStartTime,
+          businessName: updatedBooking.tenant?.name || 'RandevuAI',
+        }
+      )
+
+      const message = updateMessage || `Merhaba ${updatedBooking.customer.fullName}, randevunuz guncellendi. Yeni bilgiler: ${newBookingDate} ${newStartTime}, ${updatedBooking.staff.fullName}. Bizi tercih ettiginiz icin tesekkurler!`
 
       sendSMS({
         phone: updatedBooking.customer.phone,

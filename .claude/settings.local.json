@@ -55,7 +55,15 @@
       "Bash(git commit:*)",
       "mcp__plugin_serena_serena__search_for_pattern",
       "Bash(git diff:*)",
-      "Bash(npm init:*)"
+      "Bash(npm init:*)",
+      "mcp__plugin_serena_serena__create_text_file",
+      "Bash(ls -la \"src/app/\\(dashboard\\)/reviews/\")",
+      "Bash(echo:*)",
+      "mcp__plugin_serena_serena__execute_shell_command",
+      "Bash(dir test-results:*)",
+      "Bash(head:*)",
+      "Bash(find test-results:*)",
+      "Bash(find . -name page.tsx -path */dashboard/*)"
     ]
   }
 }

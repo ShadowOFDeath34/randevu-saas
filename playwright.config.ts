@@ -11,6 +11,10 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
+  // Global setup: Creates test user in database before running tests
+  globalSetup: require.resolve('./tests/setup/global-setup.ts'),
+  // Global teardown: Cleans up test data after running tests
+  globalTeardown: require.resolve('./tests/setup/global-teardown.ts'),
   use: {
     baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000',
     trace: 'on-first-retry',

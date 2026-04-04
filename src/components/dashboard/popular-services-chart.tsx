@@ -1,6 +1,6 @@
 'use client'
 
-import { Scissors, TrendingUp } from 'lucide-react'
+import { Scissors } from 'lucide-react'
 
 interface Service {
   id: string

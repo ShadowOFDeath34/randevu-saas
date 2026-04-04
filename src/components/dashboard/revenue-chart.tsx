@@ -1,9 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { db } from '@/lib/db'
 import { formatCurrency } from '@/lib/utils'
-import { TrendingUp, Calendar } from 'lucide-react'
+import { TrendingUp } from 'lucide-react'
 
 interface RevenueData {
   date: string
@@ -17,41 +16,43 @@ export function RevenueChart({ tenantId }: { tenantId: string }) {
 
   useEffect(() => {
     async function fetchData() {
-      const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+      try {
+        const response = await fetch('/api/reports/revenue?period=week')
+        if (!response.ok) throw new Error('Failed to fetch')
 
-      const bookings = await db.booking.findMany({
-        where: {
-          tenantId,
-          status: 'completed',
-          bookingDate: { gte: weekAgo.toISOString().split('T')[0] }
-        },
-        include: { service: true },
-        orderBy: { bookingDate: 'asc' }
-      })
+        const result = await response.json()
 
-      const grouped = bookings.reduce((acc, booking) => {
-        const date = booking.bookingDate
-        if (!acc[date]) {
-          acc[date] = { date, revenue: 0, bookings: 0 }
-        }
-        acc[date].revenue += booking.service?.price || 0
-        acc[date].bookings += 1
-        return acc
-      }, {} as Record<string, RevenueData>)
+        // Transform dailyRevenue from API to chart format
+        const dailyData = result.dailyRevenue || []
+        const grouped: Record<string, RevenueData> = {}
 
-      const last7Days = Array.from({ length: 7 }, (_, i) => {
-        const date = new Date(Date.now() - (6 - i) * 24 * 60 * 60 * 1000)
-        return date.toISOString().split('T')[0]
-      })
+        dailyData.forEach((day: { date: string; revenue: number; bookings: number }) => {
+          const shortDate = day.date.slice(5) // MM-DD format
+          grouped[day.date] = {
+            date: shortDate,
+            revenue: day.revenue,
+            bookings: day.bookings
+          }
+        })
 
-      const chartData = last7Days.map(date => ({
-        date: date.slice(5),
-        revenue: grouped[date]?.revenue || 0,
-        bookings: grouped[date]?.bookings || 0
-      }))
+        // Fill in last 7 days
+        const last7Days = Array.from({ length: 7 }, (_, i) => {
+          const date = new Date(Date.now() - (6 - i) * 24 * 60 * 60 * 1000)
+          return date.toISOString().split('T')[0]
+        })
 
-      setData(chartData)
-      setLoading(false)
+        const chartData = last7Days.map(date => ({
+          date: date.slice(5),
+          revenue: grouped[date]?.revenue || 0,
+          bookings: grouped[date]?.bookings || 0
+        }))
+
+        setData(chartData)
+      } catch (error) {
+        console.error('Failed to fetch revenue data:', error)
+      } finally {
+        setLoading(false)
+      }
     }
 
     fetchData()
@@ -86,7 +87,7 @@ export function RevenueChart({ tenantId }: { tenantId: string }) {
       </div>
 
       <div className="h-48 flex items-end justify-between gap-2">
-        {data.map((day, i) => (
+        {data.map((day) => (
           <div key={day.date} className="flex-1 flex flex-col items-center gap-1">
             <div className="w-full flex flex-col gap-1">
               <div

@@ -20,7 +20,9 @@ import {
   Palette,
   Briefcase,
   CreditCard,
-  Sparkles
+  Sparkles,
+  MessageSquare,
+  Star
 } from 'lucide-react'
 import { db } from '@/lib/db'
 
@@ -71,6 +73,8 @@ export default async function DashboardLayout({
         { href: '/settings/profile', icon: Palette, label: 'İşletme Profili' },
         { href: '/settings/billing', icon: CreditCard, label: 'Abonelik' },
         { href: '/settings/notifications', icon: Bell, label: 'Bildirimler' },
+        { href: '/settings/sms-templates', icon: MessageSquare, label: 'SMS Şablonları' },
+        { href: '/reviews', icon: Star, label: 'Değerlendirmeler' },
         { href: '/settings/theme', icon: Palette, label: 'Tema' },
         { href: '/settings/closed-dates', icon: CalendarOff, label: 'Tatil Günleri' },
         ...(session.user.role === 'super_admin' ? [{ href: '/admin', icon: Shield, label: 'Admin Panel' }] : [])

@@ -6,8 +6,6 @@ import Link from 'next/link'
 import { Suspense } from 'react'
 import {
   Calendar,
-  Clock,
-  CheckCircle2,
   Users,
   ArrowRight,
   Plus,
@@ -47,7 +45,8 @@ async function getDashboardStats(tenantId: string) {
     weekRevenue,
     monthRevenue,
     popularServices,
-    topStaff
+    topStaff,
+    reviewStats
   ] = await Promise.all([
     db.booking.count({ where: { tenantId, bookingDate: today } }),
     db.booking.count({ where: { tenantId, bookingDate: { gte: weekAgo } } }),
@@ -86,6 +85,12 @@ async function getDashboardStats(tenantId: string) {
       include: { _count: { select: { bookings: { where: { bookingDate: { gte: monthAgo } } } } } },
       take: 5,
       orderBy: { bookings: { _count: 'desc' } }
+    }),
+    db.reviewRequest.groupBy({
+      by: ['status'],
+      where: { tenantId },
+      _count: { id: true },
+      _avg: { rating: true }
     })
   ])
 
@@ -104,7 +109,8 @@ async function getDashboardStats(tenantId: string) {
     weekRevenue: calculateRevenue(weekRevenue),
     monthRevenue: calculateRevenue(monthRevenue),
     popularServices,
-    topStaff
+    topStaff,
+    reviewStats
   }
 }
 
@@ -162,6 +168,28 @@ export default async function DashboardPage() {
       gradient: 'from-violet-500 to-violet-600',
       bg: 'bg-violet-50',
       text: 'text-violet-600'
+    },
+    {
+      label: 'Müşteri Memnuniyeti',
+      value: (() => {
+        const completedReviews = stats.reviewStats.find(r => r.status === 'completed')
+        const avgRating = completedReviews?._avg?.rating || 0
+        return avgRating > 0 ? `${avgRating.toFixed(1)} / 5.0` : 'Henüz yok'
+      })(),
+      subtext: (() => {
+        const completedCount = stats.reviewStats.find(r => r.status === 'completed')?._count?.id || 0
+        const pendingCount = stats.reviewStats.find(r => r.status === 'pending')?._count?.id || 0
+        return `${completedCount} değerlendirme${pendingCount > 0 ? `, ${pendingCount} bekliyor` : ''}`
+      })(),
+      icon: Star,
+      trend: (() => {
+        const completedCount = stats.reviewStats.find(r => r.status === 'completed')?._count?.id || 0
+        return completedCount > 0 ? '★★★★★' : ''
+      })(),
+      trendUp: true,
+      gradient: 'from-amber-500 to-amber-600',
+      bg: 'bg-amber-50',
+      text: 'text-amber-600'
     }
   ]
 
@@ -216,7 +244,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         {statCards.map((stat, i) => (
           <div key={stat.label} className="card-premium p-5 animate-slide-up" style={{ animationDelay: `${i * 0.08}s`, animationFillMode: 'both' }}>
             <div className="flex items-center justify-between mb-3">

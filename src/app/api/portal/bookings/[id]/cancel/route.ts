@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import { sendSMS } from '@/lib/sms'
 import { BookingStatus } from '@prisma/client'
 import { jwtVerify } from 'jose'
+import { smsTemplateService } from '@/lib/sms/template-service'
 
 const JWT_SECRET = new TextEncoder().encode(
   process.env.NEXTAUTH_SECRET || ''
@@ -111,9 +112,23 @@ export async function POST(
     })
 
     if (customer.phone) {
+      // SMS Template sisteminden özelleştirilmiş mesaj al
+      const cancelMessage = await smsTemplateService.formatBookingCancellation(
+        booking.tenantId,
+        {
+          customerName: customer.fullName,
+          serviceName: booking.service.name,
+          date: booking.bookingDate,
+          time: booking.startTime,
+          businessName: booking.tenant?.name || 'RandevuAI',
+        }
+      )
+
+      const message = cancelMessage || `Merhaba ${customer.fullName}, ${booking.service.name} randevunuz iptal edildi.`
+
       sendSMS({
         phone: customer.phone,
-        message: `Merhaba ${customer.fullName}, ${booking.service.name} randevunuz iptal edildi.`,
+        message,
         tenantId: booking.tenantId,
         bookingId: id,
       }).catch(err => console.error('Cancel SMS failed:', err))

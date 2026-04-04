@@ -116,7 +116,7 @@ const { field } = body as { field?: string }
 
 ## Dosya Konumları
 
-Proje kök dizininde (C:\Users\enest\OneDrive\Desktop\Randevu\randevu-saas):
+Proje kök dizininde (C:\Users\Muhammed\Desktop\Randevu\randevu-saas):
 - `PROJECT_STATUS.md` - Genel durum
 - `TYPESCRIPT_ERRORS.md` - Hata çözümleri
 - `ARCHITECTURE.md` - Mimari dokümantasyon

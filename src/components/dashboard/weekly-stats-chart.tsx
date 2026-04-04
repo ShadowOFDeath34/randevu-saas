@@ -1,8 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { db } from '@/lib/db'
-import { CalendarDays, TrendingUp } from 'lucide-react'
+import { CalendarDays } from 'lucide-react'
 
 interface DayStats {
   day: string
@@ -16,38 +15,32 @@ export function WeeklyStatsChart({ tenantId }: { tenantId: string }) {
 
   useEffect(() => {
     async function fetchData() {
-      const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+      try {
+        const response = await fetch('/api/analytics?period=week')
+        if (!response.ok) throw new Error('Failed to fetch')
 
-      const bookings = await db.booking.findMany({
-        where: {
-          tenantId,
-          bookingDate: { gte: weekAgo.toISOString().split('T')[0] }
-        },
-        include: { service: true }
-      })
+        const result = await response.json()
 
-      const dayNames = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz']
-      const grouped = bookings.reduce((acc, booking) => {
-        const date = new Date(booking.bookingDate)
-        const dayIndex = date.getDay() === 0 ? 6 : date.getDay() - 1
-        const dayName = dayNames[dayIndex]
+        // weeklyStats from API: ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt']
+        // Map to our expected order: ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz']
+        const apiWeeklyStats = result.weeklyStats || []
+        const dayOrder = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz']
 
-        if (!acc[dayName]) {
-          acc[dayName] = { day: dayName, bookings: 0, revenue: 0 }
-        }
-        acc[dayName].bookings += 1
-        acc[dayName].revenue += booking.service?.price || 0
-        return acc
-      }, {} as Record<string, DayStats>)
+        const chartData = dayOrder.map(day => {
+          const apiData = apiWeeklyStats.find((s: { day: string }) => s.day === day)
+          return {
+            day,
+            bookings: apiData?.bookings || 0,
+            revenue: apiData?.revenue || 0
+          }
+        })
 
-      const chartData = dayNames.map(day => ({
-        day,
-        bookings: grouped[day]?.bookings || 0,
-        revenue: grouped[day]?.revenue || 0
-      }))
-
-      setData(chartData)
-      setLoading(false)
+        setData(chartData)
+      } catch (error) {
+        console.error('Failed to fetch weekly stats:', error)
+      } finally {
+        setLoading(false)
+      }
     }
 
     fetchData()

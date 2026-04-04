@@ -42,8 +42,11 @@ export async function POST(req: Request) {
     return NextResponse.json(service)
   } catch (error: unknown) {
     if (error instanceof Error && error.name === 'ZodError') {
-      const zodError = error as unknown as { errors: { message: string }[] }
-      return NextResponse.json({ error: zodError.errors[0].message }, { status: 400 })
+      const zodError = error as unknown as { issues?: { message: string }[] }
+      return NextResponse.json(
+        { error: zodError.issues?.[0]?.message ?? 'Geçersiz veri' },
+        { status: 400 }
+      )
     }
     console.error('Error creating service:', error)
     return NextResponse.json({ error: 'Error creating service' }, { status: 500 })

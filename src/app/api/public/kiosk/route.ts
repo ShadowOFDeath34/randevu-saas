@@ -1,9 +1,17 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { sendSMS } from '@/lib/sms'
+import { smsTemplateService } from '@/lib/sms/template-service'
+import { checkIPRateLimit, defaultConfigs, createRateLimitResponse } from '@/lib/rate-limit'
 
 export async function POST(req: Request) {
   try {
+    // CRITICAL FIX: IP bazlı rate limiting
+    const rateLimit = await checkIPRateLimit(req, defaultConfigs.public)
+    if (!rateLimit.success) {
+      return createRateLimitResponse(rateLimit)
+    }
+
     const { phone, slug } = await req.json()
 
     if (!phone || !slug) {
@@ -62,9 +70,20 @@ export async function POST(req: Request) {
 
     // Send SMS notification to customer
     if (customer.phone) {
+      // SMS Template sisteminden özelleştirilmiş mesaj al
+      const kioskMessage = await smsTemplateService.formatKioskWelcome(
+        business.tenantId,
+        {
+          customerName: customer.fullName,
+          businessName: business.businessName,
+        }
+      )
+
+      const message = kioskMessage || `Merhaba ${customer.fullName}, ${business.businessName} girisiniz kaydedildi. Siraniz alindi, kisa surede hizmet verilecektir.`
+
       sendSMS({
         phone: customer.phone,
-        message: `Merhaba ${customer.fullName}, ${business.businessName} girisiniz kaydedildi. Siraniz alindi, kisa surede hizmet verilecektir.`,
+        message,
         tenantId: business.tenantId,
         bookingId: booking.id
       }).catch(err => console.error('Kiosk SMS error:', err))

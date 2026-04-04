@@ -1,0 +1,129 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e5]:
+        - link "Randevu AI" [ref=e7] [cursor=pointer]:
+          - /url: /dashboard
+          - generic [ref=e8]: Randevu
+          - generic [ref=e9]: AI
+        - generic [ref=e10]:
+          - link "Randevu Sayfası" [ref=e11] [cursor=pointer]:
+            - /url: /b/test-business
+            - text: Randevu Sayfası
+            - img [ref=e12]
+          - button "Bildirimler" [ref=e17]:
+            - img [ref=e18]
+          - button "Koyu temaya geç" [ref=e21]:
+            - img [ref=e22]
+          - button "Çıkış Yap" [ref=e24]:
+            - img [ref=e25]
+    - generic [ref=e28]:
+      - complementary [ref=e29]:
+        - navigation [ref=e30]:
+          - generic [ref=e31]:
+            - paragraph [ref=e32]: Genel
+            - generic [ref=e33]:
+              - link "Dashboard" [ref=e34] [cursor=pointer]:
+                - /url: /dashboard
+                - img [ref=e35]
+                - generic [ref=e40]: Dashboard
+              - link "Hızlı Randevu" [ref=e41] [cursor=pointer]:
+                - /url: /bookings/quick
+                - img [ref=e42]
+                - generic [ref=e44]: Hızlı Randevu
+              - link "Takvim" [ref=e45] [cursor=pointer]:
+                - /url: /calendar
+                - img [ref=e46]
+                - generic [ref=e48]: Takvim
+              - link "Randevular" [ref=e49] [cursor=pointer]:
+                - /url: /bookings
+                - img [ref=e50]
+                - generic [ref=e53]: Randevular
+              - link "İstatistikler" [ref=e54] [cursor=pointer]:
+                - /url: /analytics
+                - img [ref=e55]
+                - generic [ref=e57]: İstatistikler
+          - generic [ref=e58]:
+            - paragraph [ref=e59]: İşletme
+            - generic [ref=e60]:
+              - link "Müşteriler" [ref=e61] [cursor=pointer]:
+                - /url: /customers
+                - img [ref=e62]
+                - generic [ref=e67]: Müşteriler
+              - link "Personel" [ref=e68] [cursor=pointer]:
+                - /url: /staff
+                - img [ref=e69]
+                - generic [ref=e72]: Personel
+              - link "Hizmetler" [ref=e73] [cursor=pointer]:
+                - /url: /services
+                - img [ref=e74]
+                - generic [ref=e80]: Hizmetler
+              - link "Çizelge" [ref=e81] [cursor=pointer]:
+                - /url: /staff/schedule
+                - img [ref=e82]
+                - generic [ref=e85]: Çizelge
+          - generic [ref=e86]:
+            - paragraph [ref=e87]: Pazarlama (Yapay Zeka)
+            - link "Akıllı Kampanyalar" [ref=e89] [cursor=pointer]:
+              - /url: /campaigns
+              - img [ref=e90]
+              - generic [ref=e93]: Akıllı Kampanyalar
+          - generic [ref=e94]:
+            - paragraph [ref=e95]: Ayarlar
+            - generic [ref=e96]:
+              - link "İşletme Profili" [ref=e97] [cursor=pointer]:
+                - /url: /settings/profile
+                - img [ref=e98]
+                - generic [ref=e104]: İşletme Profili
+              - link "Abonelik" [ref=e105] [cursor=pointer]:
+                - /url: /settings/billing
+                - img [ref=e106]
+                - generic [ref=e108]: Abonelik
+              - link "Bildirimler" [ref=e109] [cursor=pointer]:
+                - /url: /settings/notifications
+                - img [ref=e110]
+                - generic [ref=e113]: Bildirimler
+              - link "SMS Şablonları" [ref=e114] [cursor=pointer]:
+                - /url: /settings/sms-templates
+                - img [ref=e115]
+                - generic [ref=e117]: SMS Şablonları
+              - link "Değerlendirmeler" [ref=e118] [cursor=pointer]:
+                - /url: /reviews
+                - img [ref=e119]
+                - generic [ref=e121]: Değerlendirmeler
+              - link "Tema" [ref=e122] [cursor=pointer]:
+                - /url: /settings/theme
+                - img [ref=e123]
+                - generic [ref=e129]: Tema
+              - link "Tatil Günleri" [ref=e130] [cursor=pointer]:
+                - /url: /settings/closed-dates
+                - img [ref=e131]
+                - generic [ref=e135]: Tatil Günleri
+      - main [ref=e136]:
+        - generic [ref=e139]:
+          - img [ref=e141]
+          - heading "Randevular Yüklenemedi" [level=2] [ref=e143]
+          - paragraph [ref=e144]: Randevu verileri yüklenirken bir hata oluştu. Lütfen tekrar deneyin.
+          - button "Tekrar Dene" [ref=e145]:
+            - img [ref=e146]
+            - text: Tekrar Dene
+  - generic [ref=e151]:
+    - img [ref=e153]
+    - button "Open Tanstack query devtools" [ref=e201] [cursor=pointer]:
+      - img [ref=e202]
+  - generic [ref=e254] [cursor=pointer]:
+    - button "Open Next.js Dev Tools" [ref=e255]:
+      - img [ref=e256]
+    - generic [ref=e259]:
+      - button "Open issues overlay" [ref=e260]:
+        - generic [ref=e261]:
+          - generic [ref=e262]: "0"
+          - generic [ref=e263]: "1"
+        - generic [ref=e264]: Issue
+      - button "Collapse issues badge" [ref=e265]:
+        - img [ref=e266]
+  - alert [ref=e268]
+```

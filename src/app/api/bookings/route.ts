@@ -4,6 +4,7 @@ import { db } from '@/lib/db'
 import { Prisma, BookingStatus } from '@prisma/client'
 import { sendSMS } from '@/lib/sms'
 import { sendBookingConfirmationEmail } from '@/lib/email'
+import { smsTemplateService } from '@/lib/sms/template-service'
 
 export async function GET(req: Request) {
   try {
@@ -195,9 +196,22 @@ export async function POST(req: Request) {
 
     // Bildirim gönder (async, blocking değil)
     if (booking.customer?.phone) {
+      const confirmationMessage = await smsTemplateService.formatBookingConfirmation(
+        session.user.tenantId,
+        {
+          customerName: booking.customer.fullName,
+          serviceName: booking.service.name,
+          date: booking.bookingDate,
+          time: booking.startTime,
+          confirmationCode: booking.id.slice(-6).toUpperCase(),
+          staffName: booking.staff?.fullName || '',
+          businessName: booking.tenant?.name || 'RandevuAI',
+        }
+      )
+
       sendSMS({
         phone: booking.customer.phone,
-        message: `Merhaba ${booking.customer.fullName}, ${booking.service.name} randevunuz ${booking.bookingDate} ${booking.startTime} icin alindi. Onay kodunuz: ${booking.id.slice(-6).toUpperCase()}`,
+        message: confirmationMessage || `Merhaba ${booking.customer.fullName}, ${booking.service.name} randevunuz ${booking.bookingDate} ${booking.startTime} icin alindi. Onay kodunuz: ${booking.id.slice(-6).toUpperCase()}`,
         tenantId: session.user.tenantId,
         bookingId: booking.id
       }).catch(err => console.error('SMS sending failed:', err))
