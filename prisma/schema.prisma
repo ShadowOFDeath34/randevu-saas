@@ -232,6 +232,14 @@ model Customer {
   noShowProbability Float?
   lastVisitDate     DateTime?
   customerSegment   CustomerSegment? @default(new)
+
+  // Loyalty & Rewards
+  loyaltyPoints     Int              @default(0)
+  loyaltyTier       LoyaltyTier      @default(BRONZE)
+  totalPointsEarned Int              @default(0)
+  referralCode      String?          @unique
+  referredBy        String?
+
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
 
@@ -239,14 +247,114 @@ model Customer {
   bookings Booking[]
   notificationLogs NotificationLog[]
   reviewRequests ReviewRequest[]
+  loyaltyTransactions LoyaltyTransaction[]
+  rewardRedemptions RewardRedemption[]
+  referralsMade     Referral[]         @relation("Referrer")
+  referralsReceived Referral[]         @relation("Referred")
 
   @@unique([tenantId, phone])
+  @@unique([tenantId, referralCode])
   @@index([tenantId, createdAt])
   @@index([tenantId, customerSegment])
   @@index([tenantId, lastVisitDate])
   @@index([tenantId, email])
+  @@index([tenantId, loyaltyTier])
+  @@index([tenantId, loyaltyPoints])
   @@index([tenantId])
   @@index([email])
+}
+
+// Loyalty System
+
+enum LoyaltyTier {
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
+}
+
+enum LoyaltyTransactionType {
+  EARNED_BOOKING
+  EARNED_COMPLETION
+  EARNED_REVIEW
+  EARNED_REFERRAL
+  EARNED_BIRTHDAY
+  EARNED_BONUS
+  REDEEMED_REWARD
+  EXPIRED
+  ADJUSTMENT
+}
+
+model LoyaltyTransaction {
+  id          String                @id @default(cuid())
+  tenantId    String
+  customerId  String
+  customer    Customer              @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  type        LoyaltyTransactionType
+  points      Int                   // Positive for earned, negative for redeemed
+  description String
+  bookingId   String?
+  expiryDate  DateTime?             // Points expiry (optional)
+  createdAt   DateTime              @default(now())
+
+  @@index([customerId, createdAt])
+  @@index([tenantId, createdAt])
+  @@index([type, createdAt])
+}
+
+model Referral {
+  id            String    @id @default(cuid())
+  tenantId      String
+  referrerId    String
+  referrer      Customer  @relation("Referrer", fields: [referrerId], references: [id], onDelete: Cascade)
+  referredId    String    @unique
+  referred      Customer  @relation("Referred", fields: [referredId], references: [id], onDelete: Cascade)
+  status        String    @default("pending") // pending, completed, rewarded
+  pointsAwarded Int       @default(0)
+  createdAt     DateTime  @default(now())
+  completedAt   DateTime?
+
+  @@index([referrerId, status])
+  @@index([tenantId, createdAt])
+}
+
+model RewardRedemption {
+  id          String   @id @default(cuid())
+  tenantId    String
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  rewardType  String   // discount_20, discount_50, free_service, free_addon
+  pointsCost  Int
+  value       Float    // Discount amount or service value
+  status      String   @default("active") // active, used, expired
+  usedAt      DateTime?
+  expiryDate  DateTime
+  createdAt   DateTime @default(now())
+
+  @@index([customerId, status])
+  @@index([tenantId, createdAt])
+  @@index([status, expiryDate])
+}
+
+model LoyaltyConfig {
+  id                    String   @id @default(cuid())
+  tenantId              String   @unique
+  pointsPerBooking      Int      @default(10)
+  pointsPerCompletion   Int      @default(50)
+  pointsPerReview       Int      @default(25)
+  pointsPerReferral     Int      @default(100)
+  birthdayBonusPoints   Int      @default(200)
+  silverThreshold       Int      @default(500)
+  goldThreshold         Int      @default(1500)
+  platinumThreshold     Int      @default(3000)
+  pointsExpiryMonths    Int      @default(12)
+  referralEnabled       Boolean  @default(true)
+  tierDiscountBronze    Float    @default(0)
+  tierDiscountSilver    Float    @default(5)
+  tierDiscountGold      Float    @default(10)
+  tierDiscountPlatinum  Float    @default(15)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 }
 
 model Booking {
