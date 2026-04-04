@@ -340,6 +340,7 @@ model RewardRedemption {
 model LoyaltyConfig {
   id                    String   @id @default(cuid())
   tenantId              String   @unique
+  tenant                Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   pointsPerBooking      Int      @default(10)
   pointsPerCompletion   Int      @default(50)
   pointsPerReview       Int      @default(25)
