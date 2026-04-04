@@ -76,7 +76,8 @@ export async function updateCustomerTier(customerId: string, totalPoints: number
   })
 
   if (!config) return
-  let newTier = 'BRONZE'
+
+  let newTier: 'BRONZE' | 'SILVER' | 'GOLD' | 'PLATINUM' = 'BRONZE'
 
   if (totalPoints >= config.platinumThreshold) {
     newTier = 'PLATINUM'
