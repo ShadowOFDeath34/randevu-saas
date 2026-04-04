@@ -28,7 +28,7 @@ export async function POST(req: Request) {
     const triggers = await db.campaignTrigger.findMany({
       where: {
         tenantId,
-        triggerType,
+        triggerType: triggerType as any,
         status: 'active'
       }
     })
