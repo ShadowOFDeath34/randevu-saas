@@ -1,0 +1,16 @@
+HTTP/1.1 302 Found
+Access-Control-Allow-Credentials: true
+Access-Control-Allow-Headers: X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization
+Access-Control-Allow-Methods: GET,DELETE,PATCH,POST,PUT,OPTIONS
+Access-Control-Allow-Origin: https://randevu-saas-pearl.vercel.app
+Cache-Control: private, no-cache, no-store, must-revalidate
+Content-Length: 0
+Date: Sat, 04 Apr 2026 16:34:07 GMT
+Location: https://randevu-saas-pearl.vercel.app/login?error=MissingCSRF
+Server: Vercel
+Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+X-Dns-Prefetch-Control: on
+X-Matched-Path: /api/auth/[...nextauth]
+X-Vercel-Cache: MISS
+X-Vercel-Id: fra1::iad1::52js8-1775320447060-a9f02551bd39
+
