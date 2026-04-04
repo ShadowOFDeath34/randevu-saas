@@ -23,7 +23,8 @@ import {
   Sparkles,
   MessageSquare,
   Star,
-  Workflow
+  Workflow,
+  TrendingUp
 } from 'lucide-react'
 import { db } from '@/lib/db'
 
@@ -67,6 +68,12 @@ export default async function DashboardLayout({
       items: [
         { href: '/campaigns', icon: Sparkles, label: 'Akıllı Kampanyalar' },
         { href: '/triggers', icon: Workflow, label: 'Otomatik Tetikleyiciler' },
+      ]
+    },
+    {
+      title: 'Fiyatlandırma',
+      items: [
+        { href: '/settings/pricing', icon: TrendingUp, label: 'Dinamik Fiyatlandırma' },
       ]
     },
     {

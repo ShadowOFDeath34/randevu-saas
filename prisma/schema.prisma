@@ -3,8 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
@@ -70,47 +70,51 @@ model Tenant {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users              User[]
-  businessProfile    BusinessProfile?
-  businessHours     BusinessHour[]
-  staff             Staff[]
-  services          Service[]
-  customers         Customer[]
-  bookings          Booking[]
-  statusLogs        BookingStatusLog[]
+  users                 User[]
+  businessProfile       BusinessProfile?
+  businessHours         BusinessHour[]
+  staff                 Staff[]
+  services              Service[]
+  customers             Customer[]
+  bookings              Booking[]
+  statusLogs            BookingStatusLog[]
   notificationTemplates NotificationTemplate[]
-  notificationLogs  NotificationLog[]
-  reviewRequests    ReviewRequest[]
-  subscription      Subscription?
-  auditLogs         AuditLog[]
-  campaigns         Campaign[]
-  campaignTriggers  CampaignTrigger[]
-  loyaltyConfig     LoyaltyConfig?
+  notificationLogs      NotificationLog[]
+  reviewRequests        ReviewRequest[]
+  subscription          Subscription?
+  auditLogs             AuditLog[]
+  campaigns             Campaign[]
+  campaignTriggers      CampaignTrigger[]
+  loyaltyConfig         LoyaltyConfig?
+  DynamicPricingConfig  DynamicPricingConfig?
+  DynamicPricingRule    DynamicPricingRule[]
+  ServicePriceHistory   ServicePriceHistory[]
+  PricingAnalytics      PricingAnalytics[]
 }
 
 model User {
-  id           String   @id @default(cuid())
-  tenantId     String
-  name         String
-  email        String   @unique
-  passwordHash String
-  resetToken   String?  @unique
+  id               String    @id @default(cuid())
+  tenantId         String
+  name             String
+  email            String    @unique
+  passwordHash     String
+  resetToken       String?   @unique
   resetTokenExpiry DateTime?
-  role         String   @default("owner")
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  role             String    @default("owner")
+  isActive         Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
-  tenant           Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  staff            Staff?
-  campaignsCreated Campaign[]
-  auditLogs        AuditLog[]
+  tenant            Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  staff             Staff?
+  campaignsCreated  Campaign[]
+  auditLogs         AuditLog[]
   bookingStatusLogs BookingStatusLog[]
 }
 
 model BusinessProfile {
-  id           String   @id @default(cuid())
-  tenantId     String   @unique
+  id           String  @id @default(cuid())
+  tenantId     String  @unique
   businessName String
   phone        String?
   email        String?
@@ -119,29 +123,29 @@ model BusinessProfile {
   district     String?
   description  String?
   logoUrl      String?
-  bookingSlug  String   @unique
-  timezone     String   @default("Europe/Istanbul")
+  bookingSlug  String  @unique
+  timezone     String  @default("Europe/Istanbul")
 
   // Randevu ayarları
-  bufferTimeMinutes      Int     @default(0)      // Randevular arası hazırlık süresi (dakika)
-  cancellationPolicyHours Int    @default(24)     // İptal için minimum önceden bildirim (saat)
-  allowOnlineBooking     Boolean @default(true)     // Online randevu alınabilir mi?
-  maxAdvanceBookingDays  Int     @default(30)      // Maksimum kaç gün sonrasına randevu alınabilir
-  minAdvanceBookingHours Int     @default(1)       // Minimum kaç saat önceden randevu alınabilir
+  bufferTimeMinutes       Int     @default(0) // Randevular arası hazırlık süresi (dakika)
+  cancellationPolicyHours Int     @default(24) // İptal için minimum önceden bildirim (saat)
+  allowOnlineBooking      Boolean @default(true) // Online randevu alınabilir mi?
+  maxAdvanceBookingDays   Int     @default(30) // Maksimum kaç gün sonrasına randevu alınabilir
+  minAdvanceBookingHours  Int     @default(1) // Minimum kaç saat önceden randevu alınabilir
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 }
 
 model BusinessHour {
-  id         String   @id @default(cuid())
-  tenantId   String
-  dayOfWeek  Int
-  openTime   String?
-  closeTime  String?
-  isClosed   Boolean  @default(false)
+  id        String  @id @default(cuid())
+  tenantId  String
+  dayOfWeek Int
+  openTime  String?
+  closeTime String?
+  isClosed  Boolean @default(false)
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
@@ -149,24 +153,24 @@ model BusinessHour {
 }
 
 model Staff {
-  id         String   @id @default(cuid())
-  tenantId   String
-  userId     String?  @unique
-  fullName   String
-  title      String?
-  phone      String?
-  email      String?
-  bio        String?
-  avatarUrl  String?
-  isActive   Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id        String   @id @default(cuid())
+  tenantId  String
+  userId    String?  @unique
+  fullName  String
+  title     String?
+  phone     String?
+  email     String?
+  bio       String?
+  avatarUrl String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  tenant    Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  user      User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
+  tenant       Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user         User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
   workingHours StaffWorkingHour[]
-  services  StaffService[]
-  bookings  Booking[]
+  services     StaffService[]
+  bookings     Booking[]
 
   @@unique([tenantId, fullName])
   @@index([tenantId, isActive])
@@ -175,13 +179,13 @@ model Staff {
 }
 
 model StaffWorkingHour {
-  id         String   @id @default(cuid())
-  tenantId   String
-  staffId    String
-  dayOfWeek  Int
-  openTime   String?
-  closeTime  String?
-  isClosed   Boolean  @default(false)
+  id        String  @id @default(cuid())
+  tenantId  String
+  staffId   String
+  dayOfWeek Int
+  openTime  String?
+  closeTime String?
+  isClosed  Boolean @default(false)
 
   staff Staff @relation(fields: [staffId], references: [id], onDelete: Cascade)
 
@@ -200,9 +204,10 @@ model Service {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  tenant  Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  staff   StaffService[]
-  bookings Booking[]
+  tenant              Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  staff               StaffService[]
+  bookings            Booking[]
+  ServicePriceHistory ServicePriceHistory[]
 
   @@unique([tenantId, name])
   @@index([tenantId, isActive])
@@ -235,23 +240,23 @@ model Customer {
   customerSegment   CustomerSegment? @default(new)
 
   // Loyalty & Rewards
-  loyaltyPoints     Int              @default(0)
-  loyaltyTier       LoyaltyTier      @default(BRONZE)
-  totalPointsEarned Int              @default(0)
-  referralCode      String?          @unique
+  loyaltyPoints     Int         @default(0)
+  loyaltyTier       LoyaltyTier @default(BRONZE)
+  totalPointsEarned Int         @default(0)
+  referralCode      String?     @unique
   referredBy        String?
 
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  tenant Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  bookings Booking[]
-  notificationLogs NotificationLog[]
-  reviewRequests ReviewRequest[]
+  tenant              Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  bookings            Booking[]
+  notificationLogs    NotificationLog[]
+  reviewRequests      ReviewRequest[]
   loyaltyTransactions LoyaltyTransaction[]
-  rewardRedemptions RewardRedemption[]
-  referralsMade     Referral[]         @relation("Referrer")
-  referralsReceived Referral[]         @relation("Referred")
+  rewardRedemptions   RewardRedemption[]
+  referralsMade       Referral[]           @relation("Referrer")
+  referralsReceived   Referral[]           @relation("Referred")
 
   @@unique([tenantId, phone])
   @@unique([tenantId, referralCode])
@@ -287,16 +292,16 @@ enum LoyaltyTransactionType {
 }
 
 model LoyaltyTransaction {
-  id          String                @id @default(cuid())
+  id          String                 @id @default(cuid())
   tenantId    String
   customerId  String
-  customer    Customer              @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customer    Customer               @relation(fields: [customerId], references: [id], onDelete: Cascade)
   type        LoyaltyTransactionType
-  points      Int                   // Positive for earned, negative for redeemed
+  points      Int // Positive for earned, negative for redeemed
   description String
   bookingId   String?
-  expiryDate  DateTime?             // Points expiry (optional)
-  createdAt   DateTime              @default(now())
+  expiryDate  DateTime? // Points expiry (optional)
+  createdAt   DateTime               @default(now())
 
   @@index([customerId, createdAt])
   @@index([tenantId, createdAt])
@@ -320,17 +325,17 @@ model Referral {
 }
 
 model RewardRedemption {
-  id          String   @id @default(cuid())
-  tenantId    String
-  customerId  String
-  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  rewardType  String   // discount_20, discount_50, free_service, free_addon
-  pointsCost  Int
-  value       Float    // Discount amount or service value
-  status      String   @default("active") // active, used, expired
-  usedAt      DateTime?
-  expiryDate  DateTime
-  createdAt   DateTime @default(now())
+  id         String    @id @default(cuid())
+  tenantId   String
+  customerId String
+  customer   Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  rewardType String // discount_20, discount_50, free_service, free_addon
+  pointsCost Int
+  value      Float // Discount amount or service value
+  status     String    @default("active") // active, used, expired
+  usedAt     DateTime?
+  expiryDate DateTime
+  createdAt  DateTime  @default(now())
 
   @@index([customerId, status])
   @@index([tenantId, createdAt])
@@ -338,25 +343,25 @@ model RewardRedemption {
 }
 
 model LoyaltyConfig {
-  id                    String   @id @default(cuid())
-  tenantId              String   @unique
-  tenant                Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  pointsPerBooking      Int      @default(10)
-  pointsPerCompletion   Int      @default(50)
-  pointsPerReview       Int      @default(25)
-  pointsPerReferral     Int      @default(100)
-  birthdayBonusPoints   Int      @default(200)
-  silverThreshold       Int      @default(500)
-  goldThreshold         Int      @default(1500)
-  platinumThreshold     Int      @default(3000)
-  pointsExpiryMonths    Int      @default(12)
-  referralEnabled       Boolean  @default(true)
-  tierDiscountBronze    Float    @default(0)
-  tierDiscountSilver    Float    @default(5)
-  tierDiscountGold      Float    @default(10)
-  tierDiscountPlatinum  Float    @default(15)
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  id                   String   @id @default(cuid())
+  tenantId             String   @unique
+  tenant               Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  pointsPerBooking     Int      @default(10)
+  pointsPerCompletion  Int      @default(50)
+  pointsPerReview      Int      @default(25)
+  pointsPerReferral    Int      @default(100)
+  birthdayBonusPoints  Int      @default(200)
+  silverThreshold      Int      @default(500)
+  goldThreshold        Int      @default(1500)
+  platinumThreshold    Int      @default(3000)
+  pointsExpiryMonths   Int      @default(12)
+  referralEnabled      Boolean  @default(true)
+  tierDiscountBronze   Float    @default(0)
+  tierDiscountSilver   Float    @default(5)
+  tierDiscountGold     Float    @default(10)
+  tierDiscountPlatinum Float    @default(15)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 }
 
 model Booking {
@@ -368,20 +373,20 @@ model Booking {
   bookingDate      String
   startTime        String
   endTime          String
-  status           BookingStatus   @default(pending)
-  paymentStatus    PaymentStatus   @default(unpaid)
+  status           BookingStatus @default(pending)
+  paymentStatus    PaymentStatus @default(unpaid)
   paymentReference String?
-  source           String          @default("public")
+  source           String        @default("public")
   notes            String?
-  confirmationCode String          @unique @default(cuid())
-  deletedAt        DateTime?       // Soft delete alanı
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
+  confirmationCode String        @unique @default(cuid())
+  deletedAt        DateTime? // Soft delete alanı
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
 
-  tenant           Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  customer         Customer          @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  service          Service           @relation(fields: [serviceId], references: [id], onDelete: Cascade)
-  staff            Staff             @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  tenant           Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer         Customer           @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  service          Service            @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  staff            Staff              @relation(fields: [staffId], references: [id], onDelete: Cascade)
   statusLogs       BookingStatusLog[]
   notificationLogs NotificationLog[]
   reminders        BookingReminder[]
@@ -440,8 +445,8 @@ model NotificationLog {
   payload    String?
   sentAt     DateTime            @default(now())
 
-  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  booking  Booking? @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  booking  Booking?  @relation(fields: [bookingId], references: [id], onDelete: SetNull)
   customer Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
 
   @@index([sentAt, tenantId])
@@ -453,18 +458,18 @@ model NotificationLog {
 model ReviewRequest {
   id          String              @id @default(cuid())
   tenantId    String
-  bookingId    String              @unique
-  customerId   String
-  channel      NotificationChannel @default(email)
-  status       String              @default("pending")
-  rating       Int?                                    // 1-5 arası
-  comment      String?                                 // Müşteri yorumu
-  isPublished  Boolean             @default(false)     // Yayın durumu
-  publishedAt  DateTime?                               // Yayınlanma tarihi
-  requestedAt  DateTime            @default(now())
+  bookingId   String              @unique
+  customerId  String
+  channel     NotificationChannel @default(email)
+  status      String              @default("pending")
+  rating      Int? // 1-5 arası
+  comment     String? // Müşteri yorumu
+  isPublished Boolean             @default(false) // Yayın durumu
+  publishedAt DateTime? // Yayınlanma tarihi
+  requestedAt DateTime            @default(now())
 
   tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  booking  Booking    @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  booking  Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
   @@index([tenantId, isPublished])
@@ -472,46 +477,46 @@ model ReviewRequest {
 }
 
 model Plan {
-  id                  String   @id @default(cuid())
+  id                  String @id @default(cuid())
   name                String
   price               Float
   billingPeriod       String
-  maxStaff            Int      @default(1)
-  maxBookingsPerMonth Int      @default(100)
-  featuresJson        String   @default("[]")
+  maxStaff            Int    @default(1)
+  maxBookingsPerMonth Int    @default(100)
+  featuresJson        String @default("[]")
 
   subscriptions Subscription[]
 }
 
 model Subscription {
-  id                     String   @id @default(cuid())
-  tenantId               String   @unique
+  id                     String    @id @default(cuid())
+  tenantId               String    @unique
   planId                 String
-  status                 String   @default("trial")
-  startDate              DateTime @default(now())
+  status                 String    @default("trial")
+  startDate              DateTime  @default(now())
   endDate                DateTime?
   billingProvider        String?
   externalSubscriptionId String?
   trialEndsAt            DateTime?
 
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  plan   Plan   @relation(fields: [planId], references: [id])
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  plan     Plan      @relation(fields: [planId], references: [id])
   invoices Invoice[]
 
   @@index([status, endDate])
 }
 
 model Invoice {
-  id            String   @id @default(cuid())
+  id             String    @id @default(cuid())
   subscriptionId String
-  tenantId      String
-  amount        Float
-  currency      String   @default("TRY")
-  status        String   @default("pending")
-  dueDate       DateTime
-  paidAt        DateTime?
-  invoiceNumber String   @unique
-  description   String?
+  tenantId       String
+  amount         Float
+  currency       String    @default("TRY")
+  status         String    @default("pending")
+  dueDate        DateTime
+  paidAt         DateTime?
+  invoiceNumber  String    @unique
+  description    String?
 
   subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
 
@@ -559,21 +564,21 @@ model VerificationCode {
 // -----------------------------------------------------------------
 
 model Campaign {
-  id             String         @id @default(cuid())
-  tenantId       String
-  tenant         Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  name           String
-  targetSegment  CustomerSegment @default(all)
-  type           CampaignType
-  content        String
-  aiGenerated    Boolean        @default(false)
-  status         CampaignStatus @default(draft)
-  sentAt         DateTime?
-  sentCount      Int            @default(0)
-  createdBy      String
-  user           User           @relation(fields: [createdBy], references: [id])
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  id            String          @id @default(cuid())
+  tenantId      String
+  tenant        Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name          String
+  targetSegment CustomerSegment @default(all)
+  type          CampaignType
+  content       String
+  aiGenerated   Boolean         @default(false)
+  status        CampaignStatus  @default(draft)
+  sentAt        DateTime?
+  sentCount     Int             @default(0)
+  createdBy     String
+  user          User            @relation(fields: [createdBy], references: [id])
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
 
   @@index([tenantId, createdAt])
   @@index([status, createdAt])
@@ -588,8 +593,8 @@ model Campaign {
 model BookingReminder {
   id        String   @id @default(cuid())
   bookingId String
-  type      String   // reminder_24h, reminder_1h
-  channel   String   // sms, email
+  type      String // reminder_24h, reminder_1h
+  channel   String // sms, email
   sentAt    DateTime @default(now())
 
   booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
@@ -629,21 +634,21 @@ enum TriggerStatus {
 }
 
 model CampaignTrigger {
-  id          String        @id @default(cuid())
-  tenantId    String
-  tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  name        String
-  description String?
-  triggerType TriggerType
-  action      TriggerAction
-  templateId  String?       // NotificationTemplate ID (optional)
-  conditions  String?       // JSON: { minBookingCount: 5, segment: "vip", etc. }
-  delayMinutes Int         @default(0)  // Tetikleyicinin çalışması için bekleme süresi (0 = hemen)
-  status      TriggerStatus @default(active)
+  id              String        @id @default(cuid())
+  tenantId        String
+  tenant          Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name            String
+  description     String?
+  triggerType     TriggerType
+  action          TriggerAction
+  templateId      String? // NotificationTemplate ID (optional)
+  conditions      String? // JSON: { minBookingCount: 5, segment: "vip", etc. }
+  delayMinutes    Int           @default(0) // Tetikleyicinin çalışması için bekleme süresi (0 = hemen)
+  status          TriggerStatus @default(active)
   lastTriggeredAt DateTime?
-  triggerCount    Int       @default(0)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  triggerCount    Int           @default(0)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
   // İlişki: Trigger tetiklendiğinde oluşturulan loglar
   logs TriggerExecutionLog[]
@@ -655,18 +660,173 @@ model CampaignTrigger {
 }
 
 model TriggerExecutionLog {
-  id          String   @id @default(cuid())
-  triggerId   String
-  trigger     CampaignTrigger @relation(fields: [triggerId], references: [id], onDelete: Cascade)
-  tenantId    String
-  customerId  String?
-  bookingId   String?
-  status      String   // success, failed, pending
-  payload     String?  // Gönderilen mesaj içeriği
+  id           String          @id @default(cuid())
+  triggerId    String
+  trigger      CampaignTrigger @relation(fields: [triggerId], references: [id], onDelete: Cascade)
+  tenantId     String
+  customerId   String?
+  bookingId    String?
+  status       String // success, failed, pending
+  payload      String? // Gönderilen mesaj içeriği
   errorMessage String?
-  executedAt  DateTime @default(now())
+  executedAt   DateTime        @default(now())
 
   @@index([triggerId, executedAt])
   @@index([tenantId, executedAt])
   @@index([status, executedAt])
+}
+
+// -----------------------------------------------------------------
+// PHASE 4: AI-POWERED DYNAMIC PRICING
+// -----------------------------------------------------------------
+
+enum PricingRuleType {
+  SURGE_PEAK_HOURS // Yoğun saatlerde fiyat artışı
+  DISCOUNT_OFF_PEAK // Boş saatlerde indirim
+  LAST_MINUTE // Son dakika indirimi
+  ADVANCE_BOOKING // Erken rezervasyon indirimi
+  LOYALTY_BONUS // Sadakat müşterilerine özel fiyat
+  STANDOUT // Popüler personel için ek ücret
+}
+
+enum PricingAdjustmentType {
+  PERCENTAGE_INCREASE // Yüzde artış
+  PERCENTAGE_DECREASE // Yüzde indirim
+  FIXED_AMOUNT // Sabit tutar ekle/çıkar
+  FIXED_PRICE // Sabit fiyat belirle
+}
+
+model DynamicPricingConfig {
+  id       String @id @default(cuid())
+  tenantId String @unique
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Genel ayarlar
+  isEnabled            Boolean @default(false)
+  minAdjustmentPercent Float   @default(-30) // Maksimum indirim %30
+  maxAdjustmentPercent Float   @default(50) // Maksimum zam %50
+
+  // AI/ML ayarları
+  useAiOptimization Boolean   @default(true)
+  aiModelVersion    String    @default("v1")
+  lastTrainingDate  DateTime?
+
+  // Otomatik kurallar
+  autoSurgePricing    Boolean @default(true) // Yoğunluk otomatik artış
+  autoOffPeakDiscount Boolean @default(true) // Boş saat otomatik indirim
+
+  // Saat dilimi ayarları
+  peakHoursStart String @default("17:00") // Akşam yoğunluğu başlangıç
+  peakHoursEnd   String @default("20:00") // Akşam yoğunluğu bitiş
+  lunchRushStart String @default("12:00") // Öğle yoğunluğu
+  lunchRushEnd   String @default("14:00")
+
+  // Eşik değerler
+  highDemandThreshold Int @default(80) // %80 doluluk = yüksek talep
+  lowDemandThreshold  Int @default(30) // %30 doluluk = düşük talep
+  lastMinuteHours     Int @default(24) // Son 24 saat = son dakika
+  advanceBookingDays  Int @default(7) // 7+ gün = erken rezervasyon
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model DynamicPricingRule {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Temel bilgiler
+  name        String
+  description String?
+  ruleType    PricingRuleType
+  isActive    Boolean         @default(true)
+  priority    Int             @default(0) // 0 = en düşük öncelik
+
+  // Kurallar
+  adjustmentType  PricingAdjustmentType
+  adjustmentValue Float // Yüzde veya tutar
+
+  // Zaman kısıtlamaları (opsiyonel)
+  startDate  DateTime? // Belirli tarih aralığı
+  endDate    DateTime?
+  daysOfWeek Int[] // [1,2,3,4,5] = hafta içi
+  startTime  String? // "09:00"
+  endTime    String? // "12:00"
+
+  // Doluluk eşikleri (opsiyonel)
+  minOccupancy Int? // %30
+  maxOccupancy Int? // %80
+
+  // Hizmet ve personel filtreleri
+  serviceIds String[] // Boş = tüm hizmetler
+  staffIds   String[] // Boş = tüm personeller
+
+  // Sadakat seviyesi kısıtlaması
+  minLoyaltyTier LoyaltyTier? // GOLD üstü müşterilere özel
+
+  // Kullanım limitleri
+  maxUsesPerDay  Int? // Günde maksimum kaç randevu
+  maxUsesPerWeek Int?
+  totalUseCount  Int  @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId, isActive])
+  @@index([tenantId, ruleType])
+  @@index([tenantId, priority])
+}
+
+model ServicePriceHistory {
+  id        String  @id @default(cuid())
+  tenantId  String
+  tenant    Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  serviceId String
+  service   Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  // Fiyat bilgileri
+  basePrice        Float
+  adjustedPrice    Float
+  adjustmentReason String?
+
+  // Uygulanan kurallar
+  appliedRules String[] // Rule ID'ler
+
+  // Bağlam bilgisi
+  bookingDate   String? // Hangi gün için
+  startTime     String? // Hangi saat için
+  occupancyRate Int? // O anki doluluk oranı
+
+  createdAt DateTime @default(now())
+
+  @@index([tenantId, serviceId, createdAt])
+  @@index([tenantId, bookingDate])
+}
+
+model PricingAnalytics {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Tarih
+  date String // "2025-01-15"
+  hour Int // 0-23
+
+  // Metrikler
+  totalBookings Int   @default(0)
+  totalRevenue  Float @default(0)
+  avgPrice      Float @default(0)
+  occupancyRate Int   @default(0)
+
+  // AI önerileri
+  aiRecommendedPrice Float?
+  priceElasticity    Float? // Fiyat esnekliği (-1.0 ile 0 arası)
+  demandScore        Int? // 0-100 arası talep skoru
+
+  createdAt DateTime @default(now())
+
+  @@unique([tenantId, date, hour])
+  @@index([tenantId, date])
+  @@index([tenantId, date, hour])
 }
