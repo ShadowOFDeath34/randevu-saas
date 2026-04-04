@@ -24,7 +24,8 @@ import {
   MessageSquare,
   Star,
   Workflow,
-  TrendingUp
+  TrendingUp,
+  Building2
 } from 'lucide-react'
 import { db } from '@/lib/db'
 
@@ -58,6 +59,7 @@ export default async function DashboardLayout({
       title: 'İşletme',
       items: [
         { href: '/customers', icon: Users, label: 'Müşteriler' },
+        { href: '/branches', icon: Building2, label: 'Şubeler' },
         { href: '/staff', icon: Briefcase, label: 'Personel' },
         { href: '/services', icon: Scissors, label: 'Hizmetler' },
         { href: '/staff/schedule', icon: Clock, label: 'Çizelge' },

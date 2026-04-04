@@ -4,12 +4,6 @@ CREATE TYPE "PricingRuleType" AS ENUM ('SURGE_PEAK_HOURS', 'DISCOUNT_OFF_PEAK', 
 -- CreateEnum
 CREATE TYPE "PricingAdjustmentType" AS ENUM ('PERCENTAGE_INCREASE', 'PERCENTAGE_DECREASE', 'FIXED_AMOUNT', 'FIXED_PRICE');
 
--- DropIndex
-DROP INDEX "Customer_loyaltyPoints_idx";
-
--- DropIndex
-DROP INDEX "Customer_loyaltyTier_idx";
-
 -- CreateTable
 CREATE TABLE "DynamicPricingConfig" (
     "id" TEXT NOT NULL,
@@ -127,12 +121,6 @@ CREATE INDEX "PricingAnalytics_tenantId_date_hour_idx" ON "PricingAnalytics"("te
 
 -- CreateIndex
 CREATE UNIQUE INDEX "PricingAnalytics_tenantId_date_hour_key" ON "PricingAnalytics"("tenantId", "date", "hour");
-
--- CreateIndex
-CREATE INDEX "Customer_tenantId_loyaltyTier_idx" ON "Customer"("tenantId", "loyaltyTier");
-
--- CreateIndex
-CREATE INDEX "Customer_tenantId_loyaltyPoints_idx" ON "Customer"("tenantId", "loyaltyPoints");
 
 -- AddForeignKey
 ALTER TABLE "DynamicPricingConfig" ADD CONSTRAINT "DynamicPricingConfig_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;

@@ -90,6 +90,7 @@ model Tenant {
   DynamicPricingRule    DynamicPricingRule[]
   ServicePriceHistory   ServicePriceHistory[]
   PricingAnalytics      PricingAnalytics[]
+  branches              Branch[]
 }
 
 model User {
@@ -110,6 +111,7 @@ model User {
   campaignsCreated  Campaign[]
   auditLogs         AuditLog[]
   bookingStatusLogs BookingStatusLog[]
+  branchPermissions BranchPermission[]
 }
 
 model BusinessProfile {
@@ -166,11 +168,14 @@ model Staff {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  tenant       Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  user         User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
-  workingHours StaffWorkingHour[]
-  services     StaffService[]
-  bookings     Booking[]
+  tenant            Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user              User?                   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  workingHours      StaffWorkingHour[]
+  services          StaffService[]
+  bookings          Booking[]
+  branchAssignments StaffBranchAssignment[]
+  Branch            Branch?                 @relation(fields: [branchId], references: [id])
+  branchId          String?
 
   @@unique([tenantId, fullName])
   @@index([tenantId, isActive])
@@ -208,6 +213,7 @@ model Service {
   staff               StaffService[]
   bookings            Booking[]
   ServicePriceHistory ServicePriceHistory[]
+  branchServices      BranchService[]
 
   @@unique([tenantId, name])
   @@index([tenantId, isActive])
@@ -367,6 +373,7 @@ model LoyaltyConfig {
 model Booking {
   id               String        @id @default(cuid())
   tenantId         String
+  branchId         String?
   customerId       String
   serviceId        String
   staffId          String
@@ -384,6 +391,7 @@ model Booking {
   updatedAt        DateTime      @updatedAt
 
   tenant           Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch           Branch?            @relation(fields: [branchId], references: [id], onDelete: SetNull)
   customer         Customer           @relation(fields: [customerId], references: [id], onDelete: Cascade)
   service          Service            @relation(fields: [serviceId], references: [id], onDelete: Cascade)
   staff            Staff              @relation(fields: [staffId], references: [id], onDelete: Cascade)
@@ -402,6 +410,7 @@ model Booking {
   @@index([deletedAt])
   @@index([customerId])
   @@index([status])
+  @@index([branchId])
 }
 
 model BookingStatusLog {
@@ -829,4 +838,203 @@ model PricingAnalytics {
   @@unique([tenantId, date, hour])
   @@index([tenantId, date])
   @@index([tenantId, date, hour])
+}
+
+// -----------------------------------------------------------------
+// PHASE 4: MULTI-LOCATION/BRANCH SUPPORT
+// -----------------------------------------------------------------
+
+enum BranchStatus {
+  active
+  inactive
+  maintenance
+}
+
+enum BranchType {
+  main // Ana şube
+  satellite // Yan şube
+  mobile // Mobil/pop-up
+  franchise // Franchise
+}
+
+model Branch {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Temel bilgiler
+  name   String
+  code   String? // Şube kodu (örn: "IST-001")
+  type   BranchType   @default(satellite)
+  status BranchStatus @default(active)
+
+  // İletişim
+  phone      String?
+  email      String?
+  address    String?
+  city       String?
+  district   String?
+  postalCode String?
+  country    String  @default("TR")
+
+  // Konum
+  latitude  Float?
+  longitude Float?
+
+  // Çalışma saatleri (opsiyonel - tenant varsayılanını override eder)
+  customHours Boolean @default(false)
+  timezone    String  @default("Europe/Istanbul")
+
+  // Kapasite
+  maxConcurrentBookings Int @default(0) // 0 = sınırsız
+  maxStaffCount         Int @default(0) // 0 = sınırsız
+
+  // Özellikler
+  hasParking       Boolean @default(false)
+  isAccessible     Boolean @default(false) // Engelli erişimi
+  hasWaitingArea   Boolean @default(true)
+  hasOnlineBooking Boolean @default(true)
+
+  // Online rezervasyon slug
+  bookingSlug String? @unique
+  bookingUrl  String?
+
+  // İlişkiler
+  staff            Staff[]
+  services         BranchService[] // Hangi hizmetler bu şubede var
+  bookings         Booking[]
+  businessHours    BranchBusinessHour[]
+  closedDates      BranchClosedDate[]
+  staffAssignments StaffBranchAssignment[] // Personel-şube atamaları
+
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  BranchPermission BranchPermission[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId, status])
+  @@index([tenantId, type])
+  @@index([status])
+  @@index([city])
+}
+
+// Şube çalışma saatleri
+model BranchBusinessHour {
+  id       String @id @default(cuid())
+  branchId String
+  branch   Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  tenantId String
+
+  dayOfWeek Int // 0 = Pazar, 1 = Pazartesi
+  openTime  String?
+  closeTime String?
+  isClosed  Boolean @default(false)
+
+  // Öğle arası
+  lunchBreakStart String?
+  lunchBreakEnd   String?
+
+  @@unique([branchId, dayOfWeek])
+  @@index([branchId])
+}
+
+// Şube tatil günleri
+model BranchClosedDate {
+  id       String @id @default(cuid())
+  branchId String
+  branch   Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  tenantId String
+
+  date      String // "2025-01-01"
+  reason    String? // "Yılbaşı", "Bakım", vs.
+  isFullDay Boolean @default(true)
+  openTime  String? // Tam gün değilse
+  closeTime String?
+
+  createdAt DateTime @default(now())
+
+  @@unique([branchId, date])
+  @@index([branchId, date])
+}
+
+// Şube-Hizmet ilişkisi (hangi hizmet hangi şubede sunuluyor)
+model BranchService {
+  id        String  @id @default(cuid())
+  tenantId  String
+  branchId  String
+  branch    Branch  @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  serviceId String
+  service   Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  // Şube özel fiyat (opsiyonel)
+  customPrice Float?
+
+  // Şube özel süre (opsiyonel)
+  customDurationMinutes Int?
+
+  // Durum
+  isAvailable Boolean @default(true)
+
+  // Bu şubede bu hizmeti verebilen personeller
+  staffIds String[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([branchId, serviceId])
+  @@index([tenantId, branchId])
+  @@index([tenantId, serviceId])
+}
+
+// Personel-Şube atamaları (bir personel birden fazla şubede çalışabilir)
+model StaffBranchAssignment {
+  id       String @id @default(cuid())
+  tenantId String
+  staffId  String
+  staff    Staff  @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  branchId String
+  branch   Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  // Atama tipi
+  isPrimary Boolean @default(true) // Ana şubesi mi?
+  isActive  Boolean @default(true)
+
+  // Çalışma günleri bu şubede (boş = her gün)
+  workingDays Int[] // [1,2,3,4,5] = hafta içi
+
+  // Saatler (opsiyonel)
+  startTime String?
+  endTime   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([staffId, branchId])
+  @@index([tenantId, staffId])
+  @@index([tenantId, branchId])
+}
+
+// Şube seviyesinde kullanıcı yetkileri
+model BranchPermission {
+  id       String @id @default(cuid())
+  tenantId String
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  branchId String
+  branch   Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  // Yetkiler
+  canManageBookings Boolean @default(true)
+  canManageStaff    Boolean @default(false)
+  canManageServices Boolean @default(false)
+  canViewAnalytics  Boolean @default(true)
+  canManageSettings Boolean @default(false)
+  canAccessKiosk    Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, branchId])
+  @@index([tenantId, userId])
+  @@index([tenantId, branchId])
 }
