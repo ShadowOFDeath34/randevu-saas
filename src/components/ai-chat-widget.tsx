@@ -3,10 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { MessageCircle, X, Send, Bot, Sparkles, Loader2 } from 'lucide-react'
+import { MessageCircle, X, Send, Bot, Sparkles, Loader2, User } from 'lucide-react'
 
 interface Message {
   id: string
@@ -157,13 +154,13 @@ export function AIChatWidget({ tenantSlug, customerId }: AIChatWidgetProps) {
       </Button>
 
       {/* Chat Window */}
-      <Card
-        className={`fixed bottom-4 right-4 z-50 w-[380px] max-w-[calc(100vw-2rem)] shadow-2xl transition-all duration-300 ${
+      <div
+        className={`fixed bottom-4 right-4 z-50 w-[380px] max-w-[calc(100vw-2rem)] bg-white rounded-xl shadow-2xl transition-all duration-300 ${
           isOpen ? 'scale-100 opacity-100' : 'scale-0 opacity-0 pointer-events-none'
         }`}
       >
         {/* Header */}
-        <CardHeader className="py-3 px-4 border-b bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-t-lg">
+        <div className="py-3 px-4 border-b bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-t-xl">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
@@ -186,11 +183,11 @@ export function AIChatWidget({ tenantSlug, customerId }: AIChatWidgetProps) {
               <X className="h-4 w-4" />
             </Button>
           </div>
-        </CardHeader>
+        </div>
 
         {/* Messages */}
-        <CardContent className="p-0">
-          <ScrollArea className="h-[400px] px-4 py-4" ref={scrollRef}>
+        <div className="p-0">
+          <div className="h-[400px] overflow-y-auto px-4 py-4" ref={scrollRef}>
             <div className="space-y-4">
               {messages.map((message) => (
                 <div key={message.id}>
@@ -199,19 +196,17 @@ export function AIChatWidget({ tenantSlug, customerId }: AIChatWidgetProps) {
                       message.role === 'user' ? 'flex-row-reverse' : ''
                     }`}
                   >
-                    <Avatar className={`h-8 w-8 ${
+                    <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
                       message.role === 'assistant'
                         ? 'bg-indigo-100 text-indigo-600'
                         : 'bg-gray-100 text-gray-600'
                     }`}>
-                      <AvatarFallback>
-                        {message.role === 'assistant' ? (
-                          <Bot className="h-4 w-4" />
-                        ) : (
-                          <MessageCircle className="h-4 w-4" />
-                        )}
-                      </AvatarFallback>
-                    </Avatar>
+                      {message.role === 'assistant' ? (
+                        <Bot className="h-4 w-4" />
+                      ) : (
+                        <User className="h-4 w-4" />
+                      )}
+                    </div>
                     <div
                       className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm ${
                         message.role === 'user'
@@ -277,7 +272,7 @@ export function AIChatWidget({ tenantSlug, customerId }: AIChatWidgetProps) {
                 </div>
               )}
             </div>
-          </ScrollArea>
+          </div>
 
           {/* Input */}
           <form onSubmit={handleSubmit} className="p-4 border-t">
@@ -306,8 +301,8 @@ export function AIChatWidget({ tenantSlug, customerId }: AIChatWidgetProps) {
               AI tarafından desteklenir • Bilgileriniz güvende
             </p>
           </form>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </>
   )
 }
