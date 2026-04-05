@@ -72,6 +72,7 @@ export default async function DashboardLayout({
       items: [
         { href: '/campaigns', icon: Sparkles, label: 'Akıllı Kampanyalar' },
         { href: '/triggers', icon: Workflow, label: 'Otomatik Tetikleyiciler' },
+        { href: '/chat', icon: MessageSquare, label: 'AI Asistan' },
       ]
     },
     {
