@@ -23,6 +23,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         }
 
         try {
+          console.log('Auth attempt:', credentials.email)
           const user = await db.user.findUnique({
             where: { email: credentials.email as string },
             include: {
@@ -64,7 +65,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           }
         } catch (error) {
           console.error('Auth error:', error)
-          throw error
+          console.error('Auth error stack:', (error as Error).stack)
+          return null
         }
       }
     })
