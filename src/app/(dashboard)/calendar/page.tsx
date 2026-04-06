@@ -19,7 +19,7 @@ interface Booking {
 
 interface Staff {
   id: string
-  name: string
+  fullName: string
 }
 
 export default function CalendarPage() {
@@ -172,7 +172,7 @@ export default function CalendarPage() {
             >
               <option value="">Tüm Personel</option>
               {(staff as Staff[]).map((s) => (
-                <option key={s.id} value={s.id}>{s.name}</option>
+                <option key={s.id} value={s.id}>{s.fullName}</option>
               ))}
             </select>
 
