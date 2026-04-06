@@ -35,8 +35,9 @@ async function validate(): Promise<void> {
     // Bu çağrı env.ts içindeki validasyonu tetikler
     const _ = env.DATABASE_URL
     results.push({ name: 'DATABASE_URL', status: 'ok', message: 'Valid' })
-  } catch (e: any) {
-    results.push({ name: 'DATABASE_URL', status: 'error', message: e.message })
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Unknown error'
+    results.push({ name: 'DATABASE_URL', status: 'error', message })
   }
 
   // 2. NextAuth
@@ -62,16 +63,18 @@ async function validate(): Promise<void> {
         message: `Strong (${secretLen} chars)`
       })
     }
-  } catch (e: any) {
-    results.push({ name: 'NEXTAUTH_SECRET', status: 'error', message: e.message })
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Unknown error'
+    results.push({ name: 'NEXTAUTH_SECRET', status: 'error', message })
   }
 
   // 3. App URL
   try {
     const _ = env.NEXT_PUBLIC_APP_URL
     results.push({ name: 'NEXT_PUBLIC_APP_URL', status: 'ok', message: 'Valid URL' })
-  } catch (e: any) {
-    results.push({ name: 'NEXT_PUBLIC_APP_URL', status: 'error', message: e.message })
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Unknown error'
+    results.push({ name: 'NEXT_PUBLIC_APP_URL', status: 'error', message })
   }
 
   // 4. iyzico
@@ -83,8 +86,9 @@ async function validate(): Promise<void> {
       status: isSandbox ? 'warning' : 'ok',
       message: isSandbox ? 'Using sandbox key' : 'Valid'
     })
-  } catch (e: any) {
-    results.push({ name: 'IYZIPAY_API_KEY', status: 'error', message: e.message })
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Unknown error'
+    results.push({ name: 'IYZIPAY_API_KEY', status: 'error', message })
   }
 
   // 5. Service Health

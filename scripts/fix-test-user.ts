@@ -1,5 +1,5 @@
-const { PrismaClient } = require('@prisma/client')
-const bcrypt = require('bcryptjs')
+import { PrismaClient } from '@prisma/client'
+import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
 
@@ -22,7 +22,7 @@ async function fixTestUser() {
     console.log('Password: Test123!')
     console.log('isActive:', user.isActive)
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error updating test user:', error)
     process.exit(1)
   } finally {

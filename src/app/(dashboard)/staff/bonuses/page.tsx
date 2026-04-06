@@ -855,7 +855,7 @@ export default function StaffBonusesPage() {
             </div>
 
             <div className="space-y-2">
-              <Label>Hesaplama Günü (Ayın X'i)</Label>
+              <Label>Hesaplama Günü (Ayın X&apos;i)</Label>
               <Input
                 type="number"
                 min="1"

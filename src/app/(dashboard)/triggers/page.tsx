@@ -51,7 +51,7 @@ interface Trigger {
   createdAt: string
 }
 
-const TRIGGER_TYPES: Record<string, { label: string; icon: any }> = {
+const TRIGGER_TYPES: Record<string, { label: string; icon: React.ElementType }> = {
   booking_created: { label: 'Randevu Oluşturuldu', icon: Plus },
   booking_completed: { label: 'Randevu Tamamlandı', icon: CheckCircle2 },
   booking_cancelled: { label: 'Randevu İptal Edildi', icon: AlertCircle },

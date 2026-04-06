@@ -85,6 +85,18 @@ export default function AnalyticsPage() {
   const [period, setPeriod] = useState('month')
 
   useEffect(() => {
+    const fetchAnalytics = async () => {
+      try {
+        const response = await fetch(`/api/analytics?period=${period}`)
+        if (!response.ok) throw new Error('Failed to fetch')
+        const result = await response.json()
+        setData(result)
+      } catch (error) {
+        console.error('Error:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
     fetchAnalytics()
   }, [period])
 
