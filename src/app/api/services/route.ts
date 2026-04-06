@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { serviceSchema } from '@/lib/validations'
+import { ZodError } from 'zod'
 
 export async function GET() {
   try {
@@ -41,10 +42,10 @@ export async function POST(req: Request) {
 
     return NextResponse.json(service)
   } catch (error: unknown) {
-    if (error instanceof Error && error.name === 'ZodError') {
-      const zodError = error as unknown as { issues?: { message: string }[] }
+    if (error instanceof ZodError) {
+      const firstError = error.errors[0]
       return NextResponse.json(
-        { error: zodError.issues?.[0]?.message ?? 'Geçersiz veri' },
+        { error: firstError?.message || 'Geçersiz veri' },
         { status: 400 }
       )
     }
