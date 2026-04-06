@@ -18,7 +18,7 @@ interface Service {
 
 interface Staff {
   id: string
-  name: string
+  fullName: string
 }
 
 interface Customer {
@@ -290,7 +290,7 @@ export default function QuickBookingPage() {
               required
             >
               {staff.map((s: Staff) => (
-                <option key={s.id} value={s.id}>{s.name}</option>
+                <option key={s.id} value={s.id}>{s.fullName}</option>
               ))}
             </select>
 
