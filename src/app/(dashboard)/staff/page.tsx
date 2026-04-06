@@ -42,7 +42,7 @@ export default function StaffPage() {
     e.preventDefault()
 
     const data = {
-      name: formData.fullName,
+      fullName: formData.fullName,
       email: formData.email || undefined,
       phone: formData.phone || undefined,
     }

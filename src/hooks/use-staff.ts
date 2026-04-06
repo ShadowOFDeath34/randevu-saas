@@ -2,11 +2,11 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface Staff {
   id: string;
-  name: string;
+  fullName: string;
   email?: string;
   phone?: string;
-  role: string;
-  color?: string;
+  title?: string;
+  bio?: string;
   isActive: boolean;
 }
 
@@ -27,7 +27,7 @@ export function useStaff() {
 }
 
 interface CreateStaffData {
-  name: string;
+  fullName: string;
   email?: string;
   phone?: string;
   role?: string;

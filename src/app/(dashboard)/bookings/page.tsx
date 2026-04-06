@@ -26,9 +26,10 @@ export default function BookingsPage() {
   const [editingBooking, setEditingBooking] = useState<BookingView | null>(null)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
 
-  const { data: bookings = [], isLoading, error } = useBookings(
+  const { data, isLoading, error } = useBookings(
     filter !== 'all' ? { status: filter as BookingStatus } : undefined
   )
+  const bookings = data?.data || []
   const updateMutation = useUpdateBooking()
 
   const updateStatus = async (id: string, status: string) => {
