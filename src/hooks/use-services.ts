@@ -31,7 +31,7 @@ interface CreateServiceData {
   name: string;
   description?: string;
   durationMinutes: number;
-  price: number;
+  price?: number;
   color?: string;
 }
 

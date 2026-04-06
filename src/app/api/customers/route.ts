@@ -79,7 +79,13 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json()
-    const { fullName, phone, email, notes } = body
+    const { name, fullName, phone, email, notes } = body
+
+    // Support both 'name' (frontend) and 'fullName' (legacy) fields
+    const customerName = fullName || name
+    if (!customerName || !phone) {
+      return NextResponse.json({ error: 'Ad ve telefon zorunludur' }, { status: 400 })
+    }
 
     const existingCustomer = await db.customer.findFirst({
       where: { tenantId: session.user.tenantId, phone }
@@ -92,7 +98,7 @@ export async function POST(req: Request) {
     const customer = await db.customer.create({
       data: {
         tenantId: session.user.tenantId,
-        fullName,
+        fullName: customerName,
         phone,
         email: email || null,
         notes: notes || null

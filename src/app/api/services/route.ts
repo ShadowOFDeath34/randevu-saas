@@ -43,9 +43,10 @@ export async function POST(req: Request) {
     return NextResponse.json(service)
   } catch (error: unknown) {
     if (error instanceof ZodError) {
-      const firstError = error.errors[0]
+      console.error('Service validation errors:', error.issues)
+      const firstError = error.issues[0]
       return NextResponse.json(
-        { error: firstError?.message || 'Geçersiz veri' },
+        { error: firstError?.message || 'Geçersiz veri', details: error.issues },
         { status: 400 }
       )
     }

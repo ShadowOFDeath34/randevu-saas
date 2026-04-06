@@ -17,18 +17,41 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' }
       },
-      async authorize(credentials) {
-        console.log('AUTH START:', { email: credentials?.email, hasPassword: !!credentials?.password })
+      async authorize(credentials, request) {
+        console.log('AUTH START - Raw credentials:', credentials)
 
-        if (!credentials?.email || !credentials?.password) {
+        // NextAuth v5'te credentials auto-parse edilmiyor, request'ten alıyoruz
+        let email: string | undefined
+        let password: string | undefined
+
+        // Request body'den form data parse et
+        if (request) {
+          try {
+            const formData = await request.formData?.()
+            if (formData) {
+              email = formData.get('email') as string
+              password = formData.get('password') as string
+            }
+          } catch (e) {
+            console.log('AUTH: formData parse error:', e)
+          }
+        }
+
+        // Fallback to credentials
+        if (!email) email = credentials?.email as string
+        if (!password) password = credentials?.password as string
+
+        console.log('AUTH EXTRACTED:', { email: email || 'MISSING', hasPassword: !!password })
+
+        if (!email || !password) {
           console.log('AUTH FAIL: Missing credentials')
           return null
         }
 
         try {
-          console.log('AUTH DB QUERY:', credentials.email)
+          console.log('AUTH DB QUERY:', email)
           const user = await db.user.findUnique({
-            where: { email: credentials.email as string },
+            where: { email: email as string },
             include: {
               tenant: true,
               staff: true
@@ -55,21 +78,19 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           }
 
           console.log('AUTH CHECKING PASSWORD...')
-          console.log('AUTH PASSWORD INPUT:', credentials.password)
+          console.log('AUTH PASSWORD INPUT:', password)
           console.log('AUTH PASSWORD HASH:', user.passwordHash?.substring(0, 20) + '...')
 
-          // DEBUG: Skip password check for testing
-          // const isPasswordValid = await bcrypt.compare(
-          //   credentials.password as string,
-          //   user.passwordHash
-          // )
-          // console.log('AUTH PASSWORD RESULT:', isPasswordValid)
-          //
-          // if (!isPasswordValid) {
-          //   console.log('AUTH FAIL: Invalid password')
-          //   return null
-          // }
-          console.log('AUTH: Password check skipped for debugging')
+          const isPasswordValid = await bcrypt.compare(
+            password as string,
+            user.passwordHash
+          )
+          console.log('AUTH PASSWORD RESULT:', isPasswordValid)
+
+          if (!isPasswordValid) {
+            console.log('AUTH FAIL: Invalid password')
+            return null
+          }
 
           console.log('AUTH SUCCESS:', { id: user.id, email: user.email })
           return {

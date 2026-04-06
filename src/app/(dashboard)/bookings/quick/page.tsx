@@ -163,7 +163,7 @@ export default function QuickBookingPage() {
     e.preventDefault()
 
     const service = services.find((s: Service) => s.id === formData.serviceId)
-    const endTime = addMinutesToTime(formData.time, service?.duration || 30)
+    const endTime = addMinutesToTime(formData.time, service?.durationMinutes || 30)
 
     await createBooking.mutateAsync({
       customerName: formData.customerName,

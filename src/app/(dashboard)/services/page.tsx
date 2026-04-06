@@ -37,7 +37,7 @@ export default function ServicesPage() {
       name: formData.name,
       description: formData.description,
       durationMinutes: formData.durationMinutes,
-      price: formData.price ? parseFloat(formData.price) : 0,
+      price: formData.price ? parseFloat(formData.price) : undefined,
     }
 
     if (editingService) {

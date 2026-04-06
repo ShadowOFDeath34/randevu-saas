@@ -179,6 +179,44 @@ export async function GET(req: Request) {
     })
   } catch (error) {
     console.error('Error fetching analytics:', error)
-    return NextResponse.json({ error: 'Error fetching analytics' }, { status: 500 })
+    // Return safe fallback data instead of 500 error
+    return NextResponse.json({
+      totalBookings: 0,
+      completedBookings: 0,
+      cancelledBookings: 0,
+      noShowBookings: 0,
+      totalRevenue: 0,
+      totalCustomers: 0,
+      repeatCustomers: 0,
+      averageRating: 0,
+      popularServices: [],
+      topStaff: [],
+      dailyBookings: [],
+      weeklyStats: [],
+      ai: {
+        customerBehavior: {
+          peakHours: [],
+          peakDays: [],
+          avgBookingLeadTime: 0,
+          cancellationPatterns: [],
+          customerRetention: {
+            newCustomers: 0,
+            returningCustomers: 0,
+            retentionRate: 0
+          }
+        },
+        predictions: {
+          nextWeek: { expectedBookings: 0, confidence: 0, trend: 'stable' as const },
+          revenue: { expectedRevenue: 0, confidence: 0, trend: 'stable' as const },
+          recommendations: ['Veri analizi sirasinda hata olustu.']
+        },
+        customerSegments: {
+          vip: { count: 0, avgSpend: 0 },
+          regular: { count: 0, avgSpend: 0 },
+          atRisk: { count: 0, lastBooking: '' },
+          new: { count: 0, conversionRate: 0 }
+        }
+      }
+    })
   }
 }
