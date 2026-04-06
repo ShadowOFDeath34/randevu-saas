@@ -358,7 +358,7 @@ export default function SMSTemplatesPage() {
 
       {/* Reset Confirmation Dialog - Custom styled */}
       {showResetConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 modal-overlay flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 overflow-hidden">
             <div className="p-6">
               <h3 className="text-lg font-semibold text-neutral-900 mb-2">
