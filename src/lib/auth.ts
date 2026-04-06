@@ -18,12 +18,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         password: { label: 'Password', type: 'password' }
       },
       async authorize(credentials) {
+        console.log('AUTH START:', { email: credentials?.email, hasPassword: !!credentials?.password })
+
         if (!credentials?.email || !credentials?.password) {
+          console.log('AUTH FAIL: Missing credentials')
           return null
         }
 
         try {
-          console.log('Auth attempt:', credentials.email)
+          console.log('AUTH DB QUERY:', credentials.email)
           const user = await db.user.findUnique({
             where: { email: credentials.email as string },
             include: {
@@ -32,28 +35,38 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             }
           })
 
+          console.log('AUTH USER FOUND:', { id: user?.id, hasPassword: !!user?.passwordHash, isActive: user?.isActive })
+
           if (!user || !user.passwordHash) {
+            console.log('AUTH FAIL: User not found or no password')
             return null
           }
 
           if (!user.isActive) {
+            console.log('AUTH FAIL: User inactive')
             throw new Error('Hesabiniz pasife alinmis')
           }
 
           // Tenant aktiflik kontrolu
+          console.log('AUTH TENANT:', { status: user.tenant?.status })
           if (user.tenant && user.tenant.status !== 'active') {
+            console.log('AUTH FAIL: Tenant inactive')
             throw new Error('Isletmeniz pasife alinmis')
           }
 
+          console.log('AUTH CHECKING PASSWORD...')
           const isPasswordValid = await bcrypt.compare(
             credentials.password as string,
             user.passwordHash
           )
+          console.log('AUTH PASSWORD RESULT:', isPasswordValid)
 
           if (!isPasswordValid) {
+            console.log('AUTH FAIL: Invalid password')
             return null
           }
 
+          console.log('AUTH SUCCESS:', { id: user.id, email: user.email })
           return {
             id: user.id,
             email: user.email,
@@ -64,8 +77,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             staffId: user.staff?.id || null
           }
         } catch (error) {
-          console.error('Auth error:', error)
-          console.error('Auth error stack:', (error as Error).stack)
+          console.error('AUTH ERROR:', error)
+          console.error('AUTH ERROR STACK:', (error as Error)?.stack)
           return null
         }
       }
