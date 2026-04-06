@@ -40,6 +40,7 @@ export function useCreateService() {
 
   return useMutation({
     mutationFn: async (data: CreateServiceData) => {
+      console.log("Creating service with data:", data);
       const response = await fetch("/api/services", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
