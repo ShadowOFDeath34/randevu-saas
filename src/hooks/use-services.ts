@@ -15,6 +15,7 @@ const fetchServices = async (): Promise<Service[]> => {
   if (!response.ok) {
     throw new Error("Hizmetler yüklenirken hata oluştu");
   }
+  // Fix deployed: durationMinutes field
   return response.json();
 };
 
