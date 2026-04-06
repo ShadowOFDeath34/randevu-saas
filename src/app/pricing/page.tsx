@@ -1,6 +1,12 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Check, X } from 'lucide-react'
 import { plans, getYearlyPrice } from '@/lib/plans'
+
+export const metadata: Metadata = {
+  title: 'Fiyatlandırma',
+  description: 'RandevuAI fiyat planları — Ücretsiz başlayın, işletmeniz büyüdükçe yükseltin. Berber, kuaför ve güzellik salonu işletmeleri için uygun planlar.',
+}
 
 export default function PricingPage() {
   return (
@@ -70,6 +76,7 @@ export default function PricingPage() {
 
                   <Link
                     href={`/register?plan=${plan.id}`}
+                    aria-label={`${plan.name} planı ile ${plan.price === 0 ? 'ücretsiz başla' : 'şimdi başla'}`}
                     className={`block w-full py-3 text-center rounded-lg font-medium mb-8 ${
                       plan.isPopular
                         ? 'bg-indigo-600 text-white hover:bg-indigo-700'

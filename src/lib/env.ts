@@ -61,7 +61,7 @@ const optionalEnvVars = {
   SENTRY_AUTH_TOKEN: z.string().optional(),
 
   // AI
-  OPENAI_API_KEY: z.string().startsWith('sk-', 'OPENAI_API_KEY must start with sk-').optional(),
+  GOOGLE_AI_API_KEY: z.string().startsWith('AIza', 'GOOGLE_AI_API_KEY must start with AIza').optional(),
 
   // Analytics
   NEXT_PUBLIC_POSTHOG_KEY: z.string().optional(),
@@ -212,10 +212,10 @@ export function isSentryConfigured(): boolean {
 }
 
 /**
- * OpenAI'ın yapılandırılıp yapılandırılmadığını kontrol et
+ * Google AI (Gemini) yapılandırılmış mı kontrol et
  */
 export function isAIConfigured(): boolean {
-  return !!process.env.OPENAI_API_KEY
+  return !!process.env.GOOGLE_AI_API_KEY
 }
 
 /**

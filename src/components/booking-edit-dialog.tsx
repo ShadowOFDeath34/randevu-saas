@@ -158,9 +158,9 @@ export function BookingEditDialog({ booking, isOpen, onClose }: BookingEditDialo
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                   required
                 >
-                  {staff.map((s: { id: string; name: string }) => (
+                  {staff.map((s) => (
                     <option key={s.id} value={s.id}>
-                      {s.name}
+                      {s.fullName}
                     </option>
                   ))}
                 </select>

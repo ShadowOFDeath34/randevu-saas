@@ -67,9 +67,9 @@ export default function RegisterPage() {
   }
 
   const stats = [
-    { icon: Star, value: '1.200+', label: 'Aktif İşletme' },
-    { icon: TrendingUp, value: '%80', label: 'Azalan No-Show' },
-    { icon: Zap, value: '500K+', label: 'Tamamlanan Randevu' }
+    { icon: Star, value: 'AI', label: 'Destekli Platform' },
+    { icon: TrendingUp, value: '%80', label: 'Daha Az No-Show' },
+    { icon: Zap, value: '7/24', label: 'Otomatik Hatırlatma' }
   ]
 
   return (
@@ -257,9 +257,9 @@ export default function RegisterPage() {
 
           <p className="text-center text-xs text-neutral-400 mt-6">
             Kayıt olarak{' '}
-            <Link href="#" className="underline hover:text-neutral-600 transition-colors">Kullanım Şartları</Link>
+            <Link href="/terms" className="underline hover:text-neutral-600 transition-colors">Kullanım Şartları</Link>
             {' '}ve{' '}
-            <Link href="#" className="underline hover:text-neutral-600 transition-colors">Gizlilik Politikası</Link>
+            <Link href="/privacy" className="underline hover:text-neutral-600 transition-colors">Gizlilik Politikası</Link>
             &apos;nı kabul etmiş olursunuz.
           </p>
         </div>

@@ -161,7 +161,7 @@ export default function CustomersPage() {
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
             <h2 className="text-xl font-bold text-gray-900 mb-4">Yeni Müşteri</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -222,7 +222,7 @@ export default function CustomersPage() {
 
       {/* Edit Modal */}
       {showEditModal && editingCustomer && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
             <h2 className="text-xl font-bold text-gray-900 mb-4">Müşteri Düzenle</h2>
             <form onSubmit={handleEditSubmit} className="space-y-4">

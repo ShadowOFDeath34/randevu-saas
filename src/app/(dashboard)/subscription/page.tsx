@@ -42,7 +42,7 @@ export default function SubscriptionPage() {
 
       if (result.success && result.paymentPageUrl) {
         // iyzico odeme sayfasina yonlendir
-        window.location.href = result.paymentPageUrl
+        window.location.assign(result.paymentPageUrl)
       } else {
         console.error('Checkout failed:', result)
         alert('Odeme baslatilirken bir hata olustu. Lutfen tekrar deneyin.')

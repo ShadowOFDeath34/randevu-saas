@@ -141,8 +141,8 @@ export default async function DashboardPage() {
       value: stats.weekBookings,
       subtext: `${stats.monthBookings} bu ay`,
       icon: CalendarDays,
-      trend: '+12%',
-      trendUp: true,
+      trend: stats.monthBookings > 0 ? `+${((stats.weekBookings / stats.monthBookings) * 100).toFixed(0)}% aylık` : '—',
+      trendUp: stats.weekBookings > 0,
       gradient: 'from-emerald-500 to-emerald-600',
       bg: 'bg-emerald-50',
       text: 'text-emerald-600'

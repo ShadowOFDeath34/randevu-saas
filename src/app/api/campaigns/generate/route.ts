@@ -1,6 +1,84 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { GoogleGenerativeAI } from '@google/generative-ai'
+
+const SEGMENT_LABELS: Record<string, string> = {
+  at_risk: 'Kayıp risk altındaki müşteriler (uzun süredir gelmeyen)',
+  loyal: 'Sadık müşteriler (sık gelen ve memnun)',
+  new: 'Yeni müşteriler (ilk kez gelen)',
+  all: 'Tüm müşteriler'
+}
+
+async function generateWithGemini(
+  businessName: string,
+  segment: string,
+  type: 'sms' | 'email'
+): Promise<{ content: string; explanation: string }> {
+  const apiKey = process.env.GOOGLE_AI_API_KEY
+  if (!apiKey) {
+    return generateFallback(businessName, segment, type)
+  }
+
+  try {
+    const genAI = new GoogleGenerativeAI(apiKey)
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
+
+    const channelGuide = type === 'sms'
+      ? 'SMS (maksimum 160 karakter, kısa ve net, emoji kullanabilirsin)'
+      : 'E-posta (daha detaylı, profesyonel, paragraflar halinde)'
+
+    const prompt = `İşletme adı: ${businessName}
+Hedef kitle: ${SEGMENT_LABELS[segment] || segment}
+Kanal: ${channelGuide}
+
+Bu işletme için yüksek dönüşüm oranı sağlayacak bir pazarlama metni yaz.
+Müşteri adı için [İsim], randevu linki için [Link] yer tutucularını kullan.
+Sadece metni ver, başka açıklama ekleme.`
+
+    const result = await model.generateContent(prompt)
+    const content = result.response.text().trim()
+
+    return {
+      content,
+      explanation: `Gemini AI, "${SEGMENT_LABELS[segment]}" segmenti için ${type === 'sms' ? 'SMS' : 'e-posta'} metni oluşturdu.`
+    }
+  } catch (error) {
+    console.error('Gemini campaign generation error:', error)
+    return generateFallback(businessName, segment, type)
+  }
+}
+
+function generateFallback(
+  businessName: string,
+  segment: string,
+  type: 'sms' | 'email'
+): { content: string; explanation: string } {
+  const templates: Record<string, Record<string, string>> = {
+    at_risk: {
+      sms: `Merhaba [İsim]! Sizi ${businessName}'de özledik. Size özel %20 indirim! Randevu: [Link]`,
+      email: `Değerli [İsim],\n\n${businessName} olarak sizi bir süredir göremedik. Geri dönmeniz için size özel %20 indirim tanımladık.\n\nRandevu: [Link]\n\nGörüşmek üzere,\n${businessName}`
+    },
+    loyal: {
+      sms: `Sayın [İsim], sadakatiniz için teşekkürler! Bir sonraki ziyaretinizde ekstra bakım bizden. Randevu: [Link] 🌟`,
+      email: `Değerli [İsim],\n\n${businessName} ailesi olarak sadakatinizi takdir ediyoruz. Sizi her zaman en iyi şekilde ağırlamak için buradayız.\n\nBir sonraki randevunuzda ücretsiz VIP bakım hediye ediyoruz!\n\nRandevu: [Link]\n\n${businessName}`
+    },
+    new: {
+      sms: `Hoş geldiniz [İsim]! ${businessName}'e ilk gelişiniz için teşekkürler. İkinci randevunuzda %15 indirim: [Link] ✨`,
+      email: `Merhaba [İsim],\n\n${businessName}'e hoş geldiniz! İlk deneyiminizin harika geçmesini diliyoruz.\n\nİkinci ziyaretinize özel %15 indirim hesabınıza tanımlandı.\n\nRandevu: [Link]\n\n${businessName}`
+    },
+    all: {
+      sms: `Harika haberler [İsim]! ${businessName}'de yenilikler var. Keşfetmek için: [Link] 🚀`,
+      email: `Değerli [İsim],\n\n${businessName} durmadan yenileniyor! En iyi hizmeti sunabilmek için çalışmaya devam ediyoruz.\n\nYeni randevu için: [Link]\n\n${businessName}`
+    }
+  }
+
+  const segmentTemplates = templates[segment] || templates.all
+  return {
+    content: segmentTemplates[type] || segmentTemplates.sms,
+    explanation: `"${SEGMENT_LABELS[segment] || segment}" segmenti için ${type === 'sms' ? 'SMS' : 'e-posta'} şablonu oluşturuldu.`
+  }
+}
 
 export async function POST(req: Request) {
   try {
@@ -20,46 +98,11 @@ export async function POST(req: Request) {
     })
 
     const businessName = profile?.businessName || 'İşletmemiz'
+    const result = await generateWithGemini(businessName, segment, type as 'sms' | 'email')
 
-    // AI SIMULATION (Since we don't have a real OpenAI key in env, we simulate world-class contextual generation)
-    // Wait for 1.5 seconds to simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500))
-
-    let generatedText = ''
-
-    if (segment === 'at_risk') {
-      if (type === 'sms') {
-        generatedText = `Merhaba [İsim]! Sizi epeydir ${businessName}'de göremiyoruz. Size özel %20 İNDİRİM tanımladık! Hemen randevu al: [Link] - Bizi özlediyseniz bekliyoruz! ✂️`
-      } else {
-        generatedText = `Değerli Müşterimiz [İsim],\n\nUzun zamandır ${businessName} olarak sizi misafir edemedik. Sizi tekrar aramızda görmekten mutluluk duyarız!\n\nSize özel %20 indirim kodunuz: GERIGEL20\n\nAşağıdaki linkten hemen randevunuzu oluşturabilirsiniz:\n[Link]\n\nSevgilerle,\n${businessName} Ekibi`
-      }
-    } else if (segment === 'loyal') {
-      if (type === 'sms') {
-        generatedText = `Sayın [İsim], ${businessName}'nin sadık bir müşterisi olduğunuz için teşekkürler! Bir sonraki ziyaretinizde kahveniz ve ekstra bakımınız bizden. Randevu: [Link] 🌟`
-      } else {
-        generatedText = `Değerli Müşterimiz [İsim],\n\n${businessName} ailesi olarak sadakatiniz bizim için çok değerli. Sizi her zaman en iyi şekilde ağırlamak bizim görevimiz.\n\nBir sonraki randevunuzda size özel ücretsiz VIP Bakım hediye etmek istiyoruz!\n\nRandevu almak için:\n[Link]\n\nSevgilerle,\n${businessName} Ekibi`
-      }
-    } else if (segment === 'new') {
-      if (type === 'sms') {
-        generatedText = `Aramıza hoş geldiniz [İsim]! ${businessName} ile tanışmanızı kutluyor, ilk randevunuzdan sonraki gelişinize anında %15 indirim sunuyoruz. Randevu: [Link] ✨`
-      } else {
-        generatedText = `Merhaba [İsim],\n\n${businessName} ile tanıştığınız için harika hissediyoruz! İlk deneyiminizin kusursuz geçmesi için elimizden geleni yapıyoruz.\n\nİkinci ziyaretinizde kullanabileceğiniz %15 indiriminiz hesabınıza tanımlandı.\n\nYeni bir randevu oluşturmak için:\n[Link]\n\nGörüşmek üzere,\n${businessName} Ekibi`
-      }
-    } else {
-      // "all"
-      if (type === 'sms') {
-        generatedText = `Harika haber [İsim]! ${businessName}'de yenilikler var. Yeni hizmetlerimizi keşfetmek için hemen tıkla: [Link] 🚀`
-      } else {
-        generatedText = `Değerli [İsim],\n\n${businessName} durmadan yenileniyor! Size en iyi hizmeti sunabilmek için yenilikler yapmaya devam ediyoruz.\n\nSizleri de en kısa zamanda aramızda görmek isteriz.\n\nHemen Randevu Alın:\n[Link]\n\nİyi günler dileriz,\n${businessName} Ekibi`
-      }
-    }
-
-    return NextResponse.json({ 
-      content: generatedText,
-      explanation: `AI, "${segment}" segmenti ve "${type}" kanalı için işletme adınızı kullanarak yüksek dönüşüm (conversion) odaklı bir metin yazdı.`
-    })
-  } catch (error: unknown) {
-    console.error('Error generating AI campaign context:', error)
-    return NextResponse.json({ error: 'AI içerik üretemedi' }, { status: 500 })
+    return NextResponse.json(result)
+  } catch (error) {
+    console.error('Campaign generation error:', error)
+    return NextResponse.json({ error: 'İçerik üretilemedi' }, { status: 500 })
   }
 }

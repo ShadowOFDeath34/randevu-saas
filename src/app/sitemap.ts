@@ -22,27 +22,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: route === '' ? 1 : 0.8,
   }))
 
-  // Dashboard sayfaları (giriş yapılmış kullanıcılar için)
-  const dashboardPages = [
-    '/dashboard',
-    '/bookings',
-    '/calendar',
-    '/services',
-    '/staff',
-    '/customers',
-    '/settings',
-    '/settings/closed-dates',
-    '/settings/notifications',
-    '/settings/theme',
-    '/reports/revenue',
-    '/subscription',
-    '/campaigns',
-  ].map((route) => ({
-    url: `${baseUrl}${route}`,
-    lastModified: new Date().toISOString(),
-    changeFrequency: 'weekly' as const,
-    priority: 0.5,
-  }))
-
-  return [...staticPages, ...dashboardPages]
+  return staticPages
 }

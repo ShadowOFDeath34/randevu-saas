@@ -66,9 +66,8 @@ export const metadata: Metadata = {
     images: ["/og-image.png"]
   },
   manifest: "/manifest.json",
-  verification: {
-    google: "google-site-verification-code",
-  }
+  // Google Search Console doğrulama kodu buraya eklenecek
+  // verification: { google: "xxx" }
 };
 
 export default function RootLayout({
@@ -79,8 +78,8 @@ export default function RootLayout({
   return (
     <html lang="tr" dir="ltr" suppressHydrationWarning>
       <head>
-        <link rel="icon" href="/favicon.ico" sizes="any" />
-        <link rel="apple-touch-icon" href="/icon-192.png" />
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <link rel="icon" href="/favicon.svg" sizes="any" />
         {/* DNS prefetch ve preconnect ile harici kaynaklara erişimi hızlandır */}
         <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />

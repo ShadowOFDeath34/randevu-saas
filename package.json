@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "prisma generate && next build",
     "start": "next start",
-    "lint": "eslint",
+    "lint": "eslint .",
     "db:seed": "npx tsx prisma/seed.ts",
     "db:migrate": "prisma migrate deploy",
     "db:migrate:dev": "prisma migrate dev",
@@ -32,6 +32,7 @@
     "beta:deploy": "bash scripts/deploy-beta.sh"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@hookform/resolvers": "^5.2.2",
     "@libsql/client": "^0.17.0",
     "@prisma/adapter-libsql": "^7.4.2",
@@ -91,7 +92,9 @@
     "vitest": "^4.1.0"
   },
   "eslintConfig": {
-    "extends": ["next/core-web-vitals"],
+    "extends": [
+      "next/core-web-vitals"
+    ],
     "rules": {
       "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/no-require-imports": "off"

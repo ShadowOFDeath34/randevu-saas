@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { db } from '@/lib/db'
 import BookingForm from './booking-form'
@@ -13,6 +14,19 @@ const ChatWidget = dynamic(() => import('@/components/chat-widget'), {
 
 interface Props {
   params: Promise<{ slug: string }>
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params
+  const tenant = await db.tenant.findUnique({
+    where: { slug },
+    select: { name: true, businessProfile: { select: { description: true } } }
+  })
+  if (!tenant) return { title: 'İşletme Bulunamadı' }
+  return {
+    title: `${tenant.name} - Online Randevu Al`,
+    description: tenant.businessProfile?.description || `${tenant.name} için online randevu alın. Hızlı, kolay ve ücretsiz.`,
+  }
 }
 
 export default async function PublicBookingPage({ params }: Props) {
