@@ -1,11 +1,12 @@
 # RandevuAI - Akıllı Randevu Yönetim Platformu
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-1.0.0-blue" alt="Version">
-  <img src="https://img.shields.io/badge/License-Commercial-red" alt="License">
+  <img src="https://img.shields.io/badge/Version-0.1.0--beta-blue" alt="Version">
+  <img src="https://img.shields.io/badge/Status-Beta%20Ready-success" alt="Status">
   <img src="https://img.shields.io/badge/Next.js-16-black" alt="Next.js">
   <img src="https://img.shields.io/badge/TypeScript-5-blue" alt="TypeScript">
-  <img src="https://img.shields.io/badge/Prisma-SQLite-green" alt="Prisma">
+  <img src="https://img.shields.io/badge/Database-PostgreSQL-green" alt="Database">
+  <img src="https://img.shields.io/badge/Tests-49%2F49%20passing-brightgreen" alt="Tests">
 </p>
 
 ## 📋 Hakkında

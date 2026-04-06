@@ -546,3 +546,98 @@ ${businessName}
 
   return sendEmail({ to, subject, html, text, tenantId, bookingId, customerId })
 }
+
+export async function sendInvoiceEmail(
+  to: string,
+  data: {
+    customerName: string
+    invoiceNumber: string
+    amount: number
+    currency: string
+    planName: string
+    billingPeriod: string
+    invoiceDate: string
+    businessName: string
+  },
+  tenantId?: string,
+  customerId?: string
+): Promise<EmailResult> {
+  const { customerName, invoiceNumber, amount, currency, planName, billingPeriod, invoiceDate, businessName } = data
+
+  const subject = `Fatura #${invoiceNumber} - ${businessName}`
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Fatura</title>
+    </head>
+    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 20px;">
+      <div style="max-width: 600px; margin: 0 auto; background: #f9fafb; border-radius: 10px; overflow: hidden;">
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center;">
+          <h1 style="color: white; margin: 0; font-size: 24px;">Fatura</h1>
+        </div>
+        <div style="padding: 30px;">
+          <p>Merhaba <strong>${customerName}</strong>,</p>
+          <p>${businessName} aboneliğiniz için faturanız oluşturuldu.</p>
+
+          <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb;">
+              <span style="font-weight: 600; color: #6b7280;">Fatura No:</span>
+              <span>#${invoiceNumber}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb;">
+              <span style="font-weight: 600; color: #6b7280;">Plan:</span>
+              <span>${planName}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb;">
+              <span style="font-weight: 600; color: #6b7280;">Dönem:</span>
+              <span>${billingPeriod}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb;">
+              <span style="font-weight: 600; color: #6b7280;">Tarih:</span>
+              <span>${invoiceDate}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 15px 0; margin-top: 10px; border-top: 2px solid #e5e7eb;">
+              <span style="font-weight: 700; font-size: 18px;">Toplam:</span>
+              <span style="font-weight: 700; font-size: 18px; color: #4f46e5;">${amount} ${currency}</span>
+            </div>
+          </div>
+
+          <div style="background: #d1fae5; border-left: 4px solid #10b981; padding: 15px; margin: 20px 0; border-radius: 4px;">
+            <strong>Ödeme Durumu:</strong> Ödendi ✓<br>
+            Bu fatura için ödeme alınmıştır.
+          </div>
+
+          <div style="text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px;">
+            <p>Sorularınız için bize ulaşabilirsiniz.</p>
+            <p>Saygılarımızla,<br><strong>${businessName}</strong></p>
+          </div>
+        </div>
+      </div>
+    </body>
+    </html>
+  `
+
+  const text = `
+Merhaba ${customerName},
+
+${businessName} aboneliğiniz için faturanız oluşturuldu.
+
+Fatura Detayları:
+- Fatura No: #${invoiceNumber}
+- Plan: ${planName}
+- Dönem: ${billingPeriod}
+- Tarih: ${invoiceDate}
+- Toplam: ${amount} ${currency}
+
+Ödeme Durumu: Ödendi
+
+Saygılarımızla,
+${businessName}
+  `.trim()
+
+  return sendEmail({ to, subject, html, text, tenantId, customerId })
+}

@@ -70,6 +70,11 @@ model Tenant {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Feature Flags
+  aiFeaturesEnabled      Boolean @default(false)
+  enableAdvancedRouting  Boolean @default(false)
+  enableDynamicPricing   Boolean @default(false)
+
   users                 User[]
   businessProfile       BusinessProfile?
   businessHours         BusinessHour[]
@@ -92,9 +97,15 @@ model Tenant {
   PricingAnalytics      PricingAnalytics[]
   branches              Branch[]
   staffPerformanceConfig StaffPerformanceConfig?
+  bonusConfig         BonusConfig?
   staffBonusTargets    StaffBonusTarget[]
   staffBonuses         StaffBonus[]
   staffPerformanceLogs StaffPerformanceLog[]
+  tenantBranding       TenantBranding?
+  roles                Role[]
+  apiKeys              ApiKey[]
+  webhooks             Webhook[]
+  notificationSettings NotificationSettings?
 }
 
 model User {
@@ -116,6 +127,7 @@ model User {
   auditLogs         AuditLog[]
   bookingStatusLogs BookingStatusLog[]
   branchPermissions BranchPermission[]
+  userRoles         UserRole[]
 }
 
 model BusinessProfile {
@@ -515,11 +527,16 @@ model Subscription {
   externalSubscriptionId String?
   trialEndsAt            DateTime?
 
+  // iyzico alanlari
+  iyzicoPaymentId        String?
+  iyzicoConversationId   String?
+
   tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   plan     Plan      @relation(fields: [planId], references: [id])
   invoices Invoice[]
 
   @@index([status, endDate])
+  @@index([iyzicoPaymentId])
 }
 
 model Invoice {
@@ -534,10 +551,14 @@ model Invoice {
   invoiceNumber  String    @unique
   description    String?
 
+  // iyzico alanlari
+  iyzicoPaymentId String?
+
   subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
 
   @@index([tenantId, status])
   @@index([dueDate, status])
+  @@index([iyzicoPaymentId])
 }
 
 model AuditLog {
@@ -1099,6 +1120,25 @@ model StaffPerformanceConfig {
   updatedAt DateTime @updatedAt
 }
 
+// Prim sistemi genel yapılandırması
+model BonusConfig {
+  id        String @id @default(cuid())
+  tenantId  String @unique
+  tenant    Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  isEnabled           Boolean @default(true)
+  defaultPeriod       String  @default("MONTHLY") // WEEKLY, MONTHLY, QUARTERLY
+  calculationDay      Int     @default(1) // Ayın hangi günü hesaplama yapılacak
+  baseBonusPercentage Float   @default(5) // Varsayılan prim yüzdesi
+  minBookingCount     Int     @default(50) // Minimum randevu sayısı
+  minCustomerRating   Float   @default(4.0) // Minimum müşteri puanı
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+}
+
 // Personel özel hedef ve prim yapılandırması
 model StaffBonusTarget {
   id       String @id @default(cuid())
@@ -1220,4 +1260,435 @@ model StaffPerformanceLog {
   @@unique([staffId, date])
   @@index([tenantId, staffId, date])
   @@index([tenantId, date])
+}
+
+// -----------------------------------------------------------------
+// PHASE 5: ENTERPRISE - WHITE-LABEL & CUSTOM BRANDING
+// -----------------------------------------------------------------
+
+model TenantBranding {
+  id       String @id @default(cuid())
+  tenantId String @unique
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Logo & Assets
+  logoUrl        String?
+  logoDarkUrl    String? // Dark mode logo
+  faviconUrl     String?
+  loadingImageUrl String? // Loading spinner image
+
+  // Colors (CSS variables)
+  primaryColor   String @default("#4f46e5") // Indigo-600
+  secondaryColor String @default("#7c3aed") // Violet-600
+  accentColor    String @default("#06b6d4") // Cyan-500
+  backgroundColor String @default("#ffffff")
+  textColor      String @default("#1f2937")
+
+  // Dark mode colors
+  darkBackgroundColor String @default("#111827")
+  darkTextColor       String @default("#f3f4f6")
+
+  // Typography
+  fontFamily     String @default("Inter, system-ui, sans-serif")
+  headingFont    String?
+  fontScale      String @default("100%") // 90%, 100%, 110%
+
+  // Custom Domain
+  customDomain   String? @unique
+  domainVerified Boolean @default(false)
+  sslStatus      String  @default("pending") // pending, active, expired
+
+  // Email Template Customization
+  emailLogoUrl      String?
+  emailHeaderColor  String @default("#4f46e5")
+  emailFooterText   String?
+  emailFromName     String?
+  emailFromAddress  String?
+  emailReplyTo      String?
+
+  // Portal Customization
+  portalTitle       String @default("Randevu Portalı")
+  portalSubtitle    String?
+  customCss         String? @db.Text
+  customHeadHtml    String? @db.Text
+  customFooterHtml  String? @db.Text
+
+  // Booking Page Customization
+  bookingPageSlug   String? @unique
+  bookingPageTitle  String @default("Randevu Al")
+  bookingPageDescription String?
+  showPoweredBy     Boolean @default(true)
+  showTenantName    Boolean @default(true)
+
+  // Social Links
+  facebookUrl   String?
+  instagramUrl  String?
+  twitterUrl    String?
+  linkedinUrl   String?
+  websiteUrl    String?
+
+  // Meta Tags
+  metaTitle       String?
+  metaDescription String?
+  metaKeywords    String?
+  ogImageUrl      String?
+
+  // Active Themes
+  themeMode     String @default("light") // light, dark, auto
+  themeVariant  String @default("default") // default, modern, minimal
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([customDomain])
+  @@index([bookingPageSlug])
+}
+
+// -----------------------------------------------------------------
+// PHASE 5: ENTERPRISE - RBAC (ROLE-BASED ACCESS CONTROL)
+// -----------------------------------------------------------------
+
+enum RoleType {
+  SYSTEM // System-defined roles (cannot be deleted)
+  CUSTOM // User-defined custom roles
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  name        String
+  description String?
+  type        RoleType @default(CUSTOM)
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+
+  // Role color for UI
+  color       String @default("#4f46e5")
+
+  // Permissions (JSON array of permission strings)
+  // ["bookings:read", "bookings:create", "bookings:update", "bookings:delete"]
+  // ["staff:read", "staff:manage"]
+  // ["customers:read", "customers:manage"]
+  // ["services:read", "services:manage"]
+  // ["analytics:read", "analytics:export"]
+  // ["settings:read", "settings:manage"]
+  // ["billing:read", "billing:manage"]
+  // ["admin:full_access"]
+  permissions String // JSON array
+
+  // Auto-assign rules
+  autoAssignNewUsers Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userRoles UserRole[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId, isActive])
+}
+
+model UserRole {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  roleId String
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  // Optional: Branch-specific role assignment
+  branchId String?
+
+  assignedAt  DateTime @default(now())
+  assignedBy  String?  // User ID who assigned this role
+
+  // Custom permissions override for this specific user
+  customPermissions Json? // { "bookings:delete": false, "analytics:export": true }
+
+  @@unique([userId, roleId, branchId])
+  @@index([userId])
+  @@index([roleId])
+}
+
+// Permission definitions (reference table)
+model Permission {
+  id          String @id @default(cuid())
+  key         String @unique // "bookings:read"
+  name        String // "Bookings - View"
+  description String?
+  category    String // "bookings", "staff", "customers", etc.
+
+  // Display info
+  icon        String? // Lucide icon name
+  color       String? // Tailwind color class
+
+  // Metadata
+  isSystem     Boolean @default(true)
+  requiresPlan String? // Which plan is required: "starter", "pro", "enterprise"
+
+  createdAt DateTime @default(now())
+}
+
+// -----------------------------------------------------------------
+// PHASE 5: ENTERPRISE - API KEYS & RATE LIMITING
+// -----------------------------------------------------------------
+
+enum ApiKeyStatus {
+  ACTIVE
+  REVOKED
+  EXPIRED
+}
+
+model ApiKey {
+  id          String @id @default(cuid())
+  tenantId    String
+  tenant      Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Key info
+  name        String  // "Mobile App Integration"
+  description String?
+
+  // The actual key (hashed storage)
+  keyHash     String  @unique // SHA-256 hash
+  keyPrefix   String  // First 8 chars for display: "ak_live_abc123..."
+
+  // Status
+  status      ApiKeyStatus @default(ACTIVE)
+  expiresAt   DateTime?
+  lastUsedAt  DateTime?
+
+  // Permissions (subset of tenant permissions)
+  permissions String? // JSON array: ["bookings:read", "customers:read"]
+  allowedIps  String? // JSON array of allowed IPs ["192.168.1.0/24"]
+  allowedOrigins String? // CORS origins
+
+  // Rate limiting per key
+  rateLimitPerMinute  Int @default(60)
+  rateLimitPerHour    Int @default(1000)
+  rateLimitPerDay     Int @default(10000)
+
+  // Usage tracking
+  usageCountTotal     Int @default(0)
+  usageCountThisMonth Int @default(0)
+
+  createdBy   String? // User ID
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  revokedAt   DateTime?
+  revokedBy   String?
+  revokeReason String?
+
+  // Relations
+  usageLogs ApiUsageLog[]
+
+  @@index([tenantId, status])
+  @@index([keyHash])
+  @@index([status, expiresAt])
+}
+
+model ApiUsageLog {
+  id         String   @id @default(cuid())
+  tenantId   String
+  apiKeyId   String
+  apiKey     ApiKey   @relation(fields: [apiKeyId], references: [id], onDelete: Cascade)
+
+  // Request info
+  endpoint    String   // "/api/v1/bookings"
+  method      String   // "GET", "POST", etc.
+  statusCode  Int      // HTTP response code
+
+  // Request metadata
+  ipAddress   String?
+  userAgent   String?
+  requestTime DateTime @default(now())
+  responseTimeMs Int? // Response time in milliseconds
+
+  // Request/Response size
+  requestSize  Int?
+  responseSize Int?
+
+  // Error tracking
+  errorType    String?
+  errorMessage String?
+
+  @@index([apiKeyId, requestTime])
+  @@index([tenantId, requestTime])
+  @@index([endpoint, requestTime])
+}
+
+// -----------------------------------------------------------------
+// PHASE 5: ENTERPRISE - WEBHOOKS
+// -----------------------------------------------------------------
+
+enum WebhookEvent {
+  // Booking events
+  BOOKING_CREATED
+  BOOKING_CONFIRMED
+  BOOKING_CANCELLED
+  BOOKING_COMPLETED
+  BOOKING_UPDATED
+  BOOKING_NO_SHOW
+
+  // Customer events
+  CUSTOMER_CREATED
+  CUSTOMER_UPDATED
+
+  // Payment events
+  PAYMENT_RECEIVED
+  PAYMENT_FAILED
+  PAYMENT_REFUNDED
+
+  // Staff events
+  STAFF_AVAILABILITY_CHANGED
+
+  // System events
+  TEST // Test webhook
+}
+
+enum WebhookStatus {
+  ACTIVE
+  PAUSED
+  DISABLED
+}
+
+model Webhook {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Configuration
+  name        String
+  url         String  // HTTPS endpoint
+  description String?
+  status      WebhookStatus @default(ACTIVE)
+
+  // Events to subscribe
+  events      String // JSON array of WebhookEvent values
+
+  // Security
+  secret      String? // Webhook signing secret (for HMAC verification)
+  signatureHeader String @default("X-Webhook-Signature")
+
+  // Retry configuration
+  maxRetries        Int @default(3)
+  retryIntervalSec  Int @default(60) // Exponential backoff base
+
+  // Filtering
+  filterBranchId    String? // Only events from this branch
+  filterServiceId   String? // Only events for this service
+
+  // Metadata
+  createdBy String? // User ID
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  deliveries WebhookDelivery[]
+
+  @@index([tenantId, status])
+}
+
+enum WebhookDeliveryStatus {
+  PENDING
+  DELIVERED
+  FAILED
+  RETRYING
+}
+
+model WebhookDelivery {
+  id        String @id @default(cuid())
+  webhookId String
+  webhook   Webhook @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+  tenantId  String
+
+  // Event data
+  eventType   WebhookEvent
+  eventId     String // Unique event ID (for idempotency)
+  payload     String @db.Text // JSON payload
+
+  // Delivery tracking
+  status          WebhookDeliveryStatus @default(PENDING)
+  attemptCount    Int @default(0)
+  nextRetryAt     DateTime?
+
+  // HTTP details
+  requestHeaders  String? // JSON
+  requestBody     String? // JSON
+  responseStatus  Int?
+  responseHeaders String?
+  responseBody    String? @db.Text
+
+  // Error details
+  errorCode       String?
+  errorMessage    String?
+
+  // Timestamps
+  firstAttemptAt  DateTime?
+  lastAttemptAt   DateTime?
+  deliveredAt     DateTime?
+
+  // Performance
+  responseTimeMs  Int?
+
+  createdAt DateTime @default(now())
+
+  @@index([webhookId, status])
+  @@index([tenantId, createdAt])
+  @@index([eventId])
+  @@index([status, nextRetryAt]) // For retry scheduler
+}
+
+// -----------------------------------------------------------------
+// NOTIFICATION SETTINGS (Tenant Notification Preferences)
+// -----------------------------------------------------------------
+
+model NotificationSettings {
+  id       String @id @default(cuid())
+  tenantId String @unique
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // SMS Hatırlatmalar
+  smsReminders24h Boolean @default(true) // 24 saat önce SMS hatırlatma
+  smsReminders1h  Boolean @default(true) // 1 saat önce SMS hatırlatma
+
+  // Email Hatırlatmalar
+  emailReminders24h Boolean @default(true) // 24 saat önce email hatırlatma
+  emailReminders1h  Boolean @default(true) // 1 saat önce email hatırlatma
+
+  // Booking Notifications (İşletmeye bildirimler)
+  notifyNewBooking     Boolean @default(true) // Yeni randevu bildirimi
+  notifyCancellation   Boolean @default(true) // İptal bildirimi
+  notifyNoShow         Boolean @default(true) // Gelmedi bildirimi
+  notifyReschedule     Boolean @default(true) // Değişiklik bildirimi
+
+  // Channel preferences by event type
+  bookingConfirmationChannel NotificationChannel @default(email) // sms, email, whatsapp
+  bookingReminderChannel     NotificationChannel @default(sms)  // sms, email
+  marketingChannel           NotificationChannel @default(email) // sms, email, whatsapp
+
+  // Daily notification limits (spam prevention)
+  dailySMSLimit    Int @default(100)
+  dailyEmailLimit  Int @default(500)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// -----------------------------------------------------------------
+// NOTIFICATION COST TRACKING
+// -----------------------------------------------------------------
+
+model NotificationCostLog {
+  id        String              @id @default(cuid())
+  tenantId  String
+  channel   NotificationChannel
+  segments  Int                 @default(1) // SMS segment sayısı
+  cost      Float               @default(0) // TL cinsinden
+  sentAt    DateTime            @default(now())
+
+  @@index([tenantId, sentAt])
+  @@index([tenantId, channel])
 }

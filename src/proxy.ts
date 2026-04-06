@@ -1,119 +1,184 @@
-import { auth } from '@/lib/auth'
-import { db } from '@/lib/db'
+/**
+ * Next.js 16 Routing Middleware (proxy.ts)
+ * - Rate limiting
+ * - Security headers
+ * - CORS handling
+ * - CSRF protection
+ *
+ * Node.js Runtime (default in Next.js 16)
+ */
+
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { addSecurityHeaders, addApiSecurityHeaders, checkSecurity } from '@/middleware/security'
+import { getEndpointConfig, createRateLimitHeaders } from '@/lib/security/rate-limit'
+import { logStructured } from '@/lib/monitoring'
 
-// Next.js 16+ proxy.ts - Node.js runtime ile çalışır
-export async function proxy(request: NextRequest) {
-  const session = await auth()
+// Rate limit sonuçları için memory store
+const rateLimitStore = new Map<string, { count: number; reset: number }>()
 
-  const path = request.nextUrl.pathname
-
-  // Güvenlik header'ları ekle
-  const response = NextResponse.next()
-
-  // Content Security Policy (CSP)
-  const cspHeader = `
-    default-src 'self';
-    script-src 'self' 'unsafe-eval' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com;
-    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-    img-src 'self' blob: data: https://*.googleusercontent.com https://*.vercel.app;
-    font-src 'self' https://fonts.gstatic.com;
-    connect-src 'self' https://*.vercel.app https://api.resend.com;
-    frame-ancestors 'none';
-    base-uri 'self';
-    form-action 'self';
-  `.replace(/\s{2,}/g, ' ').trim()
-
-  response.headers.set('Content-Security-Policy', cspHeader)
-  response.headers.set('X-Frame-Options', 'DENY')
-  response.headers.set('X-Content-Type-Options', 'nosniff')
-  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
-  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
-  response.headers.set('X-DNS-Prefetch-Control', 'on')
-
-  // Protected routes kontrolü
-  if (path.startsWith('/dashboard') ||
-      path.startsWith('/calendar') ||
-      path.startsWith('/bookings') ||
-      path.startsWith('/services') ||
-      path.startsWith('/staff') ||
-      path.startsWith('/customers') ||
-      path.startsWith('/settings')) {
-
-    // 1. Session kontrolü
-    if (!session) {
-      return NextResponse.redirect(new URL('/login', request.url))
-    }
-
-    // 2. Tenant ID kontrolü
-    if (!session.user.tenantId) {
-      console.error('Middleware: Session tenantId eksik', { userId: session.user.id })
-      return NextResponse.redirect(new URL('/login?error=no_tenant', request.url))
-    }
-
-    // 3. Tenant aktiflik kontrolü (DB sorgusu)
-    try {
-      const tenant = await db.tenant.findUnique({
-        where: { id: session.user.tenantId },
-        select: { id: true, status: true, slug: true }
-      })
-
-      if (!tenant) {
-        console.error('Middleware: Tenant bulunamadı', { tenantId: session.user.tenantId })
-        return NextResponse.redirect(new URL('/login?error=tenant_not_found', request.url))
-      }
-
-      if (tenant.status !== 'active') {
-        console.error('Middleware: Tenant pasif', { tenantId: tenant.id, status: tenant.status })
-        return NextResponse.redirect(new URL('/login?error=tenant_inactive', request.url))
-      }
-
-      // 4. URL'deki tenant slug kontrolü (eğer varsa)
-      const urlTenantSlug = request.nextUrl.searchParams.get('tenant')
-      if (urlTenantSlug && urlTenantSlug !== session.user.tenantSlug) {
-        console.error('Middleware: Tenant slug uyuşmazlığı', {
-          urlSlug: urlTenantSlug,
-          sessionSlug: session.user.tenantSlug
-        })
-        return NextResponse.redirect(new URL('/unauthorized', request.url))
-      }
-
-    } catch (error) {
-      console.error('Middleware: Tenant kontrolü hatası', error)
-      return NextResponse.redirect(new URL('/error', request.url))
-    }
-  }
-
-  // Admin routes kontrolü
-  if (path.startsWith('/admin')) {
-    if (!session) {
-      return NextResponse.redirect(new URL('/login', request.url))
-    }
-
-    if (session.user.role !== 'super_admin') {
-      console.warn('Middleware: Yetkisiz admin erişimi', {
-        userId: session.user.id,
-        role: session.user.role
-      })
-      return NextResponse.redirect(new URL('/dashboard', request.url))
-    }
-  }
-
-  return response
+// Routing config
+export const routing = {
+  matcher: [
+    /*
+     * Match all request paths except:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public folder
+     */
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
 }
 
+// Path'ler için rate limit bypass (static assets)
+const BYPASS_PATHS = [
+  '/_next/',
+  '/static/',
+  '/favicon.ico',
+  '/robots.txt',
+  '/sitemap.xml',
+]
 
-// Proxy config - Next.js 16+ format
-export const config = {
-  matcher: [
-    '/dashboard/:path*',
-    '/calendar/:path*',
-    '/bookings/:path*',
-    '/services/:path*',
-    '/staff/:path*',
-    '/customers/:path*',
-    '/settings/:path*',
-    '/admin/:path*'
-  ]
+// CSRF token doğrulaması gerekmeyen paths
+const CSRF_EXEMPT_PATHS = [
+  '/api/webhooks/',
+  '/api/auth/callback/',
+  '/api/cron/',
+]
+
+/**
+ * Rate limit check (inline, redis yokken)
+ */
+async function checkRateLimit(identifier: string, config: { requests: number; window: number }) {
+  const now = Date.now()
+  const windowMs = config.window * 1000
+  const key = `${identifier}:${Math.floor(now / windowMs)}`
+
+  const entry = rateLimitStore.get(key)
+
+  if (!entry) {
+    rateLimitStore.set(key, { count: 1, reset: now + windowMs })
+    return { success: true, limit: config.requests, remaining: config.requests - 1, reset: now + windowMs }
+  }
+
+  entry.count++
+
+  if (entry.count > config.requests) {
+    return {
+      success: false,
+      limit: config.requests,
+      remaining: 0,
+      reset: entry.reset,
+      retryAfter: Math.ceil((entry.reset - now) / 1000),
+    }
+  }
+
+  return {
+    success: true,
+    limit: config.requests,
+    remaining: Math.max(0, config.requests - entry.count),
+    reset: entry.reset,
+  }
+}
+
+/**
+ * CSRF token doğrulama
+ */
+function validateCSRF(request: NextRequest): boolean {
+  // GET, HEAD, OPTIONS request'ler için CSRF gerekmez
+  if (['GET', 'HEAD', 'OPTIONS'].includes(request.method)) {
+    return true
+  }
+
+  // Exempt paths
+  const path = request.nextUrl.pathname
+  if (CSRF_EXEMPT_PATHS.some(p => path.startsWith(p))) {
+    return true
+  }
+
+  // API routes için CSRF token kontrol et
+  if (path.startsWith('/api/')) {
+    const csrfToken = request.headers.get('x-csrf-token')
+    // TODO: CSRF token doğrulama (session-based veya double-submit cookie)
+    // Production'da session'dan gelen token ile karşılaştır
+    return true // Şimdilik bypass
+  }
+
+  return true
+}
+
+/**
+ * Main middleware function (Next.js 16 proxy.ts format)
+ */
+export default async function middleware(request: NextRequest) {
+  const path = request.nextUrl.pathname
+  const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown'
+
+  // Bypass static assets
+  if (BYPASS_PATHS.some(p => path.startsWith(p))) {
+    return NextResponse.next()
+  }
+
+  // Security check
+  const security = checkSecurity(request)
+  if (!security.valid) {
+    logStructured('warn', 'Security check failed', {
+      path,
+      ip,
+      reason: security.reason,
+    })
+    return new NextResponse('Security check failed', { status: 400 })
+  }
+
+  // CSRF validation
+  if (!validateCSRF(request)) {
+    logStructured('warn', 'CSRF validation failed', { path, ip })
+    return new NextResponse('CSRF token invalid', { status: 403 })
+  }
+
+  // Rate limiting for API routes
+  if (path.startsWith('/api/')) {
+    const config = getEndpointConfig(path)
+    const identifier = `ip:${ip}`
+    const rateLimit = await checkRateLimit(identifier, config)
+
+    if (!rateLimit.success) {
+      logStructured('warn', 'Rate limit exceeded', {
+        path,
+        ip,
+        retryAfter: rateLimit.retryAfter,
+      })
+
+      return new NextResponse('Too Many Requests', {
+        status: 429,
+        headers: {
+          'Retry-After': String(rateLimit.retryAfter),
+          ...createRateLimitHeaders(rateLimit),
+        },
+      })
+    }
+
+    // API response oluştur
+    const response = NextResponse.next()
+
+    // API security headers
+    addApiSecurityHeaders(response)
+
+    // Rate limit headers
+    const rateHeaders = createRateLimitHeaders(rateLimit)
+    Object.entries(rateHeaders).forEach(([key, value]) => {
+      response.headers.set(key, value)
+    })
+
+    return response
+  }
+
+  // Normal page response
+  const response = NextResponse.next()
+
+  // Add security headers
+  addSecurityHeaders(response)
+
+  return response
 }

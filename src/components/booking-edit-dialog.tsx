@@ -142,7 +142,7 @@ export function BookingEditDialog({ booking, isOpen, onClose }: BookingEditDialo
                 >
                   {services.map((s: { id: string; name: string; duration?: number }) => (
                     <option key={s.id} value={s.id}>
-                      {s.name} ({s.duration} dk)
+                      {s.name} ({s.durationMinutes} dk)
                     </option>
                   ))}
                 </select>

@@ -167,7 +167,7 @@ export async function createSubscriptionCheckout(params: CreateSubscriptionParam
     basketId: `basket_${tenantId}_${Date.now()}`,
     paymentChannel: 'WEB',
     paymentGroup: 'SUBSCRIPTION',
-    callbackUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/payment/callback?plan=${planId}&tenant=${tenantId}`,
+    callbackUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/subscription/callback`,
     buyer: {
       id: tenantId,
       name: customer.name,

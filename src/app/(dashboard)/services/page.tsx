@@ -36,7 +36,7 @@ export default function ServicesPage() {
     const data = {
       name: formData.name,
       description: formData.description,
-      duration: formData.durationMinutes,
+      durationMinutes: formData.durationMinutes,
       price: formData.price ? parseFloat(formData.price) : 0,
     }
 

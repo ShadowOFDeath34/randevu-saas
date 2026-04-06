@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { sendInvoiceEmail } from '@/lib/email'
 import crypto from 'crypto'
 
 /**
@@ -100,10 +101,10 @@ export async function POST(req: Request) {
 
     // 8. Basarili odeme senaryosu
     const isSuccess = status === 'success' || mdStatus === '1' || iyziStatus === 'success'
-    
+
     if (isSuccess) {
-      // Transaction ile guncelleme
-      const result = await db.$transaction(async (tx) => {
+      // Once booking odemesi mi kontrol et
+      const bookingResult = await db.$transaction(async (tx) => {
         const booking = await tx.booking.findFirst({
           where: {
             OR: [
@@ -113,11 +114,8 @@ export async function POST(req: Request) {
           }
         })
 
-        if (!booking) {
-          console.error('Webhook: Booking bulunamadi', { conversationId: conversationId.substring(0, 10) + '...' })
-          return null
-        }
-        
+        if (!booking) return null
+
         // Zaten odenmisse tekrar isleme
         if (booking.paymentStatus === 'paid') {
           console.log('Webhook: Booking zaten odenmis', { bookingId: booking.id })
@@ -129,11 +127,10 @@ export async function POST(req: Request) {
           data: {
             paymentStatus: 'paid',
             paymentReference: paymentId || null,
-            status: 'confirmed' // Odemesi alindiysa onaylandi olarak isaretle
+            status: 'confirmed'
           }
         })
-        
-        // Audit log
+
         await tx.auditLog.create({
           data: {
             tenantId: booking.tenantId,
@@ -147,19 +144,95 @@ export async function POST(req: Request) {
             })
           }
         })
-        
+
         return updatedBooking
       })
-      
-      if (result) {
-        console.log('Webhook: Odeme basariyla islendi', { bookingId: result.id })
+
+      if (bookingResult) {
+        console.log('Webhook: Booking odemesi basariyla islendi', { bookingId: bookingResult.id })
+      } else {
+        // Booking bulunamadiysa subscription odemesi olabilir
+        const subscriptionResult = await db.$transaction(async (tx) => {
+          // conversationId formati: {tenantId}_{timestamp}
+          const tenantId = conversationId.split('_')[0]
+          if (!tenantId) return null
+
+          // Subscription'i bul
+          const subscription = await tx.subscription.findFirst({
+            where: { tenantId },
+            include: { plan: true, tenant: { include: { businessProfile: true } } }
+          })
+
+          if (!subscription) return null
+
+          // Abonelik bitis tarihini hesapla
+          const now = new Date()
+          const endDate = subscription.plan.billingPeriod === 'yıllık'
+            ? new Date(now.setFullYear(now.getFullYear() + 1))
+            : new Date(now.setMonth(now.getMonth() + 1))
+
+          // Subscription'i guncelle
+          const updatedSubscription = await tx.subscription.update({
+            where: { id: subscription.id },
+            data: {
+              status: 'active',
+              endDate,
+              iyzicoPaymentId: paymentId || undefined,
+              iyzicoConversationId: conversationId
+            }
+          })
+
+          // Fatura olustur
+          const invoice = await tx.invoice.create({
+            data: {
+              tenantId,
+              subscriptionId: subscription.id,
+              amount: subscription.plan.price,
+              currency: 'TRY',
+              status: 'paid',
+              dueDate: new Date(),
+              paidAt: new Date(),
+              invoiceNumber: `INV-${Date.now()}`,
+              description: `${subscription.plan.name} - ${subscription.plan.billingPeriod}`,
+              iyzicoPaymentId: paymentId || undefined
+            }
+          })
+
+          return { subscription: updatedSubscription, invoice, tenant: subscription.tenant, plan: subscription.plan }
+        })
+
+        if (subscriptionResult) {
+          console.log('Webhook: Subscription odemesi basariyla islendi', { subscriptionId: subscriptionResult.subscription.id })
+
+          // Fatura email'i gonder
+          const owner = await db.user.findFirst({
+            where: { tenantId: subscriptionResult.tenant.id, role: 'owner' }
+          })
+
+          if (owner?.email) {
+            await sendInvoiceEmail(owner.email, {
+              customerName: owner.name || 'Değerli Müşteri',
+              invoiceNumber: subscriptionResult.invoice.invoiceNumber,
+              amount: subscriptionResult.invoice.amount,
+              currency: subscriptionResult.invoice.currency,
+              planName: subscriptionResult.plan.name,
+              billingPeriod: subscriptionResult.plan.billingPeriod,
+              invoiceDate: new Date().toLocaleDateString('tr-TR'),
+              businessName: subscriptionResult.tenant.businessProfile?.businessName || 'RandevuAI'
+            }, subscriptionResult.tenant.id, owner.id).catch(err => {
+              console.error('Fatura email gonderme hatasi:', err)
+            })
+          }
+        } else {
+          console.error('Webhook: Ne booking ne de subscription bulunamadi', { conversationId: conversationId.substring(0, 10) + '...' })
+        }
       }
     } else {
       // Basarisiz odeme
-      console.log('Webhook: Basarisiz odeme', { 
+      console.log('Webhook: Basarisiz odeme', {
         conversationId: conversationId.substring(0, 10) + '...',
         status,
-        errorMessage: body.errorMessage 
+        errorMessage: body.errorMessage
       })
     }
 

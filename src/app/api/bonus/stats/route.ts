@@ -1,48 +1,46 @@
 import { auth } from '@/lib/auth'
-import { getStaffPerformanceSummary, getBonusReport } from '@/lib/bonus/service'
+import { db } from '@/lib/db'
 import { NextResponse } from 'next/server'
 
-export async function GET(request: Request) {
+// GET - Get bonus statistics
+export async function GET() {
   try {
     const session = await auth()
-    if (!session) {
+    if (!session?.user?.tenantId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { searchParams } = new URL(request.url)
-    const staffId = searchParams.get('staffId')
-    const days = parseInt(searchParams.get('days') || '30')
+    const [totalStats, paidStats, pendingStats] = await Promise.all([
+      db.staffBonus.count({
+        where: { tenantId: session.user.tenantId }
+      }),
+      db.staffBonus.aggregate({
+        where: {
+          tenantId: session.user.tenantId,
+          status: 'PAID'
+        },
+        _sum: {
+          calculatedBonus: true
+        }
+      }),
+      db.staffBonus.aggregate({
+        where: {
+          tenantId: session.user.tenantId,
+          status: { in: ['PENDING', 'CALCULATED', 'APPROVED'] }
+        },
+        _sum: {
+          calculatedBonus: true
+        }
+      })
+    ])
 
-    if (staffId) {
-      // Individual staff summary
-      const summary = await getStaffPerformanceSummary(
-        staffId,
-        session.user.tenantId,
-        days
-      )
-      return NextResponse.json(summary)
-    }
-
-    // Dashboard stats - all staff summary
-    const bonuses = await getBonusReport(session.user.tenantId)
-
-    const stats = {
-      totalBonuses: bonuses.length,
-      totalPaid: bonuses
-        .filter(b => b.status === 'PAID')
-        .reduce((sum, b) => sum + Number((b as any).calculatedAmount), 0),
-      totalPending: bonuses
-        .filter(b => b.status === 'CALCULATED' || b.status === 'PENDING')
-        .reduce((sum, b) => sum + Number((b as any).calculatedAmount), 0),
-      recentBonuses: bonuses.slice(0, 5)
-    }
-
-    return NextResponse.json(stats)
+    return NextResponse.json({
+      totalBonuses: totalStats,
+      totalPaid: paidStats._sum.calculatedBonus || 0,
+      totalPending: pendingStats._sum.calculatedBonus || 0
+    })
   } catch (error) {
     console.error('Error fetching bonus stats:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch bonus stats' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

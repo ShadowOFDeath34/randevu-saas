@@ -26,7 +26,12 @@ import {
   Workflow,
   TrendingUp,
   Building2,
-  Trophy
+  Trophy,
+  Paintbrush,
+  Lock,
+  Key,
+  Webhook,
+  ScrollText
 } from 'lucide-react'
 import { db } from '@/lib/db'
 
@@ -85,12 +90,16 @@ export default async function DashboardLayout({
       title: 'Ayarlar',
       items: [
         { href: '/settings/profile', icon: Palette, label: 'İşletme Profili' },
+        { href: '/settings/branding', icon: Paintbrush, label: 'Marka ve Tema' },
+        { href: '/settings/roles', icon: Lock, label: 'Roller ve İzinler' },
         { href: '/settings/billing', icon: CreditCard, label: 'Abonelik' },
         { href: '/settings/notifications', icon: Bell, label: 'Bildirimler' },
         { href: '/settings/sms-templates', icon: MessageSquare, label: 'SMS Şablonları' },
         { href: '/reviews', icon: Star, label: 'Değerlendirmeler' },
-        { href: '/settings/theme', icon: Palette, label: 'Tema' },
         { href: '/settings/closed-dates', icon: CalendarOff, label: 'Tatil Günleri' },
+        { href: '/settings/api-keys', icon: Key, label: 'API Anahtarları' },
+        { href: '/settings/webhooks', icon: Webhook, label: 'Webhooklar' },
+        { href: '/settings/audit-logs', icon: ScrollText, label: 'Denetim Kayıtları' },
         ...(session.user.role === 'super_admin' ? [{ href: '/admin', icon: Shield, label: 'Admin Panel' }] : [])
       ]
     }

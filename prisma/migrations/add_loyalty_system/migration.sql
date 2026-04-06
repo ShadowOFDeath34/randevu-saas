@@ -1,5 +1,10 @@
--- CreateEnum
-CREATE TYPE "LoyaltyTier" AS ENUM ('BRONZE', 'SILVER', 'GOLD', 'PLATINUM');
+-- Create LoyaltyTier enum if not exists
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'LoyaltyTier') THEN
+        CREATE TYPE "LoyaltyTier" AS ENUM ('BRONZE', 'SILVER', 'GOLD', 'PLATINUM');
+    END IF;
+END $$;
 
 -- CreateEnum
 CREATE TYPE "LoyaltyTransactionType" AS ENUM ('EARNED_BOOKING', 'EARNED_COMPLETION', 'EARNED_REVIEW', 'EARNED_REFERRAL', 'EARNED_BIRTHDAY', 'EARNED_BONUS', 'REDEEMED_REWARD', 'EXPIRED', 'ADJUSTMENT');

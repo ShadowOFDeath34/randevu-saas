@@ -12,7 +12,7 @@ import { Sparkles, Clock, Star, TrendingUp, CheckCircle2, AlertCircle } from 'lu
 interface Service {
   id: string
   name: string
-  duration: number
+  durationMinutes: number
   price: number
 }
 
@@ -106,7 +106,7 @@ export default function QuickBookingPage() {
 
     setLoadingScores(true)
     try {
-      const endTime = addMinutesToTime(formData.time, service.duration)
+      const endTime = addMinutesToTime(formData.time, service.durationMinutes)
       const response = await fetch(
         `/api/routing?serviceId=${formData.serviceId}&date=${formData.date}&startTime=${formData.time}&endTime=${endTime}${formData.customerId ? `&customerId=${formData.customerId}` : ''}`
       )
@@ -136,7 +136,7 @@ export default function QuickBookingPage() {
     const service = services.find((s: Service) => s.id === serviceId)
     setFormData(prev => ({ ...prev, serviceId }))
     if (service) {
-      setSelectedServiceDuration(service.duration)
+      setSelectedServiceDuration(service.durationMinutes)
     }
   }
 
@@ -275,7 +275,7 @@ export default function QuickBookingPage() {
             >
               {services.map((s: Service) => (
                 <option key={s.id} value={s.id}>
-                  {s.name} ({s.duration} dk)
+                  {s.name} ({s.durationMinutes} dk)
                 </option>
               ))}
             </select>

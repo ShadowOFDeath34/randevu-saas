@@ -1,63 +1,88 @@
 import { auth } from '@/lib/auth'
-import { getPerformanceConfig, upsertPerformanceConfig } from '@/lib/bonus/service'
+import { db } from '@/lib/db'
 import { NextResponse } from 'next/server'
+import { z } from 'zod'
 
+// GET - Get bonus config
 export async function GET() {
   try {
     const session = await auth()
-    if (!session) {
+    if (!session?.user?.tenantId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const config = await getPerformanceConfig(session.user.tenantId)
-    return NextResponse.json(config)
+    const config = await db.bonusConfig.findUnique({
+      where: { tenantId: session.user.tenantId }
+    })
+
+    if (!config) {
+      return NextResponse.json(null)
+    }
+
+    return NextResponse.json({
+      id: config.id,
+      isEnabled: config.isEnabled,
+      defaultPeriod: config.defaultPeriod,
+      calculationDay: config.calculationDay,
+      baseBonusPercentage: config.baseBonusPercentage,
+      minBookingCount: config.minBookingCount,
+      minCustomerRating: config.minCustomerRating
+    })
   } catch (error) {
     console.error('Error fetching bonus config:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch bonus config' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
+// POST - Create or update bonus config
 export async function POST(request: Request) {
   try {
     const session = await auth()
-    if (!session) {
+    if (!session?.user?.tenantId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Only owner and admin can update config
-    if (!['owner', 'admin'].includes(session.user.role)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
+    const data = await request.json()
 
-    const body = await request.json()
+    // Validation
+    const schema = z.object({
+      isEnabled: z.boolean().default(true),
+      defaultPeriod: z.enum(['WEEKLY', 'MONTHLY', 'QUARTERLY']).default('MONTHLY'),
+      calculationDay: z.number().min(1).max(31).default(1),
+      baseBonusPercentage: z.number().min(0).max(100).default(5),
+      minBookingCount: z.number().min(0).default(50),
+      minCustomerRating: z.number().min(1).max(5).default(4.0)
+    })
 
-    // Validate required fields
-    if (!body.defaultPeriod) {
+    const validated = schema.parse(data)
+
+    // Upsert config
+    const config = await db.bonusConfig.upsert({
+      where: { tenantId: session.user.tenantId },
+      update: validated,
+      create: {
+        tenantId: session.user.tenantId,
+        ...validated
+      }
+    })
+
+    return NextResponse.json({
+      id: config.id,
+      isEnabled: config.isEnabled,
+      defaultPeriod: config.defaultPeriod,
+      calculationDay: config.calculationDay,
+      baseBonusPercentage: config.baseBonusPercentage,
+      minBookingCount: config.minBookingCount,
+      minCustomerRating: config.minCustomerRating
+    })
+  } catch (error) {
+    if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'Validation error', details: error.issues },
         { status: 400 }
       )
     }
-
-    const config = await upsertPerformanceConfig({
-      tenantId: session.user.tenantId,
-      isEnabled: body.isEnabled ?? true,
-      defaultPeriod: body.defaultPeriod as 'WEEKLY' | 'MONTHLY' | 'QUARTERLY',
-      calculationDay: body.calculationDay ?? 1,
-      baseBonusPercentage: body.baseBonusPercentage ?? 5,
-      minBookingCount: body.minBookingCount ?? 50,
-      minCustomerRating: body.minCustomerRating ?? 4.0
-    })
-
-    return NextResponse.json(config)
-  } catch (error) {
-    console.error('Error updating bonus config:', error)
-    return NextResponse.json(
-      { error: 'Failed to update bonus config' },
-      { status: 500 }
-    )
+    console.error('Error saving bonus config:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

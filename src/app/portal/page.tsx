@@ -8,7 +8,7 @@ interface Booking {
   date: string
   time: string
   status: 'pending' | 'confirmed' | 'completed' | 'cancelled'
-  service: { name: string; price: number; duration: number }
+  service: { name: string; price: number; durationMinutes: number }
   staff: { name: string }
 }
 
@@ -264,7 +264,7 @@ export default function PortalPage() {
                           <User className="w-4 h-4" />
                           {booking.staff.name}
                         </span>
-                        <span>{booking.service.duration} dk</span>
+                        <span>{booking.service.durationMinutes} dk</span>
                         <span className="font-medium text-indigo-600">{booking.service.price} TL</span>
                       </div>
                     </div>

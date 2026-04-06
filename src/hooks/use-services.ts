@@ -4,7 +4,7 @@ interface Service {
   id: string;
   name: string;
   description?: string;
-  duration: number;
+  durationMinutes: number;
   price: number;
   color?: string;
   isActive: boolean;
@@ -29,7 +29,7 @@ export function useServices() {
 interface CreateServiceData {
   name: string;
   description?: string;
-  duration: number;
+  durationMinutes: number;
   price: number;
   color?: string;
 }

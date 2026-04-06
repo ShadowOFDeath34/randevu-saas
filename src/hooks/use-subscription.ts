@@ -87,4 +87,32 @@ export function useUpgradePlan() {
   });
 }
 
+interface CheckoutResponse {
+  success: boolean;
+  checkoutFormContent?: string;
+  paymentPageUrl?: string;
+  conversationId?: string;
+  error?: string;
+}
+
+export function useCheckoutPlan() {
+  return useMutation({
+    mutationFn: async (planId: string): Promise<CheckoutResponse> => {
+      const response = await fetch("/api/subscription/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ planId }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Ödeme başlatılırken hata oluştu");
+      }
+
+      return data;
+    },
+  });
+}
+
 export type { Plan, Invoice, Subscription, SubscriptionData };

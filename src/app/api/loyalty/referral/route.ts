@@ -18,7 +18,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Customer ID required' }, { status: 400 })
     }
 
-    let customer = await db.customer.findUnique({
+    const customer = await db.customer.findUnique({
       where: { id: customerId },
       select: { referralCode: true }
     })

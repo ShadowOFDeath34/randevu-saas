@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Check, CreditCard, Calendar, Crown, Zap, Building2, X } from 'lucide-react'
-import { useSubscription, usePlans, useUpgradePlan } from '@/hooks/use-subscription'
+import { useSubscription, usePlans, useCheckoutPlan } from '@/hooks/use-subscription'
 import { Skeleton } from '@/components/ui/skeleton'
 
 interface Plan {
@@ -26,7 +26,7 @@ interface Invoice {
 export default function SubscriptionPage() {
   const { data: subscriptionData, isLoading: subLoading } = useSubscription()
   const { data: plans = [], isLoading: plansLoading } = usePlans()
-  const upgradePlan = useUpgradePlan()
+  const checkoutPlan = useCheckoutPlan()
 
   const [showUpgrade, setShowUpgrade] = useState(false)
 
@@ -36,9 +36,21 @@ export default function SubscriptionPage() {
   const currentPlan = subscription?.plan
   const isTrial = subscription?.status === 'trial'
 
-  const handleUpgrade = async (planId: string) => {
-    await upgradePlan.mutateAsync(planId)
-    setShowUpgrade(false)
+  const handleCheckout = async (planId: string) => {
+    try {
+      const result = await checkoutPlan.mutateAsync(planId)
+
+      if (result.success && result.paymentPageUrl) {
+        // iyzico odeme sayfasina yonlendir
+        window.location.href = result.paymentPageUrl
+      } else {
+        console.error('Checkout failed:', result)
+        alert('Odeme baslatilirken bir hata olustu. Lutfen tekrar deneyin.')
+      }
+    } catch (error) {
+      console.error('Checkout error:', error)
+      alert('Odeme baslatilirken bir hata olustu. Lutfen tekrar deneyin.')
+    }
   }
 
   if (subLoading || plansLoading) {
@@ -211,15 +223,15 @@ export default function SubscriptionPage() {
                   </ul>
 
                   <button
-                    onClick={() => plan.name !== currentPlan?.name && handleUpgrade(plan.id)}
-                    disabled={plan.name === currentPlan?.name || upgradePlan.isPending}
+                    onClick={() => plan.name !== currentPlan?.name && handleCheckout(plan.id)}
+                    disabled={plan.name === currentPlan?.name || checkoutPlan.isPending}
                     className={`w-full py-2 rounded-lg font-medium ${
                       plan.name === currentPlan?.name
                         ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                         : 'bg-indigo-600 text-white hover:bg-indigo-700'
                     }`}
                   >
-                    {plan.name === currentPlan?.name ? 'Mevcut Plan' : upgradePlan.isPending ? 'İşleniyor...' : 'Seç'}
+                    {plan.name === currentPlan?.name ? 'Mevcut Plan' : checkoutPlan.isPending ? 'Yonlendiriliyor...' : 'Sec'}
                   </button>
                 </div>
               ))}

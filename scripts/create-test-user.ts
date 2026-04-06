@@ -1,66 +1,130 @@
-const { PrismaClient } = require('@prisma/client')
-const bcrypt = require('bcryptjs')
-
-const prisma = new PrismaClient()
+import { db } from '@/lib/db'
+import { hash } from 'bcryptjs'
 
 async function createTestUser() {
   try {
-    // Check if test user already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email: 'test@example.com' }
+    // Önce tenant'ı bul veya oluştur
+    let tenant = await db.tenant.findFirst({
+      where: { slug: 'test-salon' }
     })
 
-    if (existingUser) {
-      console.log('Test user already exists:', existingUser.id)
-      console.log('Email: test@example.com')
-      console.log('Password: Test123!')
-      process.exit(0)
+    if (!tenant) {
+      tenant = await db.tenant.create({
+        data: {
+          name: 'Test Kuaför Salonu',
+          slug: 'test-salon',
+          status: 'ACTIVE',
+          aiFeaturesEnabled: true,
+          enableAdvancedRouting: true,
+          enableDynamicPricing: true,
+        }
+      })
+      console.log('✓ Tenant oluşturuldu:', tenant.id)
+      
+      // Business Profile oluştur
+      await db.businessProfile.create({
+        data: {
+          tenantId: tenant.id,
+          businessName: 'Test Kuaför Salonu',
+          businessType: 'HAIR_SALON',
+          bookingSlug: 'test-kuafor',
+          phone: '+90 555 123 4567',
+          email: 'info@test-salon.com',
+          address: 'Test Mahallesi, Test Sokak No:1',
+          city: 'Istanbul',
+          timezone: 'Europe/Istanbul',
+          currency: 'TRY',
+        }
+      })
+      console.log('✓ Business Profile oluşturuldu')
+      
+      // Business Hours oluştur
+      const days = [
+        { day: 1, open: '09:00', close: '19:00' },
+        { day: 2, open: '09:00', close: '19:00' },
+        { day: 3, open: '09:00', close: '19:00' },
+        { day: 4, open: '09:00', close: '19:00' },
+        { day: 5, open: '09:00', close: '19:00' },
+        { day: 6, open: '10:00', close: '18:00' },
+      ]
+      
+      for (const day of days) {
+        await db.businessHour.create({
+          data: {
+            tenantId: tenant.id,
+            dayOfWeek: day.day,
+            openTime: day.open,
+            closeTime: day.close,
+            isOpen: true,
+          }
+        })
+      }
+      console.log('✓ Business Hours oluşturuldu')
+      
+    } else {
+      // Tenant'ı güncelle - tüm özellikleri aktif et
+      tenant = await db.tenant.update({
+        where: { id: tenant.id },
+        data: {
+          aiFeaturesEnabled: true,
+          enableAdvancedRouting: true,
+          enableDynamicPricing: true,
+        }
+      })
+      console.log('✓ Mevcut tenant bulundu ve güncellendi:', tenant.id)
     }
 
-    // Create test user
-    const hashedPassword = await bcrypt.hash('Test123!', 10)
+    // Test kullanıcısı oluştur
+    const hashedPassword = await hash('Test123!', 12)
 
-    const user = await prisma.user.create({
-      data: {
-        email: 'test@example.com',
-        name: 'Test User',
+    const user = await db.user.upsert({
+      where: { email: 'enes@test.com' },
+      update: {
+        role: 'owner',
+        status: 'ACTIVE',
+        tenantId: tenant.id,
         password: hashedPassword,
-        tenant: {
-          create: {
-            name: 'Test Business',
-            slug: 'test-business',
-            settings: {
-              businessHours: {
-                monday: { open: '09:00', close: '18:00' },
-                tuesday: { open: '09:00', close: '18:00' },
-                wednesday: { open: '09:00', close: '18:00' },
-                thursday: { open: '09:00', close: '18:00' },
-                friday: { open: '09:00', close: '18:00' },
-                saturday: { open: '10:00', close: '14:00' },
-                sunday: { open: '10:00', close: '14:00' }
-              }
-            }
-          }
-        },
-        role: 'ADMIN'
       },
-      include: {
-        tenant: true
-      }
+      create: {
+        email: 'enes@test.com',
+        name: 'Enes Test',
+        password: hashedPassword,
+        role: 'owner',
+        status: 'ACTIVE',
+        tenantId: tenant.id,
+        emailVerified: new Date(),
+      },
     })
 
-    console.log('Test user created successfully!')
-    console.log('User ID:', user.id)
-    console.log('Tenant ID:', user.tenantId)
-    console.log('Email: test@example.com')
-    console.log('Password: Test123!')
-    console.log('Role: ADMIN')
+    console.log('\n✅ Test kullanıcısı hazır:', {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      tenantId: user.tenantId,
+    })
+
+    console.log('\n════════════════════════════════════')
+    console.log('      GİRİŞ BİLGİLERİ')
+    console.log('════════════════════════════════════')
+    console.log('📧 Email: enes@test.com')
+    console.log('🔑 Şifre: Test123!')
+    console.log('🏢 Tenant: Test Kuaför Salonu')
+    console.log('👑 Rol: Owner (Full Yetki)')
+    console.log('════════════════════════════════════')
+    console.log('\n🚀 Aktif Özellikler:')
+    console.log('   ✓ AI Analytics')
+    console.log('   ✓ Advanced Routing')
+    console.log('   ✓ Dynamic Pricing')
+    console.log('   ✓ Loyalty System')
+    console.log('   ✓ Campaign Automation')
+    console.log('   ✓ API Keys & Webhooks')
+    console.log('   ✓ Audit Logging')
+    console.log('   ✓ RBAC & Permissions')
 
   } catch (error) {
-    console.error('Error creating test user:', error)
-    process.exit(1)
+    console.error('❌ Hata:', error)
   } finally {
-    await prisma.$disconnect()
+    await db.$disconnect()
   }
 }
 

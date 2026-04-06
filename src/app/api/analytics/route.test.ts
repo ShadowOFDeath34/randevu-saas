@@ -9,6 +9,11 @@ const mocks = vi.hoisted(() => ({
       count: vi.fn(),
     },
   },
+  aiAnalytics: {
+    analyzeCustomerBehavior: vi.fn(),
+    generateBookingPredictions: vi.fn(),
+    segmentCustomers: vi.fn(),
+  },
 }))
 
 vi.mock('@/lib/auth', () => ({
@@ -17,6 +22,12 @@ vi.mock('@/lib/auth', () => ({
 
 vi.mock('@/lib/db', () => ({
   db: mocks.db,
+}))
+
+vi.mock('@/lib/ai/analytics', () => ({
+  analyzeCustomerBehavior: mocks.aiAnalytics.analyzeCustomerBehavior,
+  generateBookingPredictions: mocks.aiAnalytics.generateBookingPredictions,
+  segmentCustomers: mocks.aiAnalytics.segmentCustomers,
 }))
 
 const session = {
@@ -41,6 +52,9 @@ function mockSuccessfulAnalyticsQueries() {
       { date: '2026-04-04', count: 1n, revenue: 300 },
     ])
   mocks.db.customer.count.mockResolvedValueOnce(5)
+  mocks.aiAnalytics.analyzeCustomerBehavior.mockResolvedValueOnce({ insights: [] })
+  mocks.aiAnalytics.generateBookingPredictions.mockResolvedValueOnce({ predictions: [] })
+  mocks.aiAnalytics.segmentCustomers.mockResolvedValueOnce({ segments: [] })
 }
 
 describe('analytics/route.ts', () => {
@@ -152,6 +166,9 @@ describe('analytics/route.ts', () => {
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
     mocks.db.customer.count.mockResolvedValueOnce(5)
+    mocks.aiAnalytics.analyzeCustomerBehavior.mockResolvedValueOnce({ insights: [] })
+    mocks.aiAnalytics.generateBookingPredictions.mockResolvedValueOnce({ predictions: [] })
+    mocks.aiAnalytics.segmentCustomers.mockResolvedValueOnce({ segments: [] })
 
     const response = await GET(new Request('http://localhost/api/analytics'))
     const data = await response.json()
@@ -172,6 +189,9 @@ describe('analytics/route.ts', () => {
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
     mocks.db.customer.count.mockResolvedValueOnce(5)
+    mocks.aiAnalytics.analyzeCustomerBehavior.mockResolvedValueOnce({ insights: [] })
+    mocks.aiAnalytics.generateBookingPredictions.mockResolvedValueOnce({ predictions: [] })
+    mocks.aiAnalytics.segmentCustomers.mockResolvedValueOnce({ segments: [] })
 
     const response = await GET(new Request('http://localhost/api/analytics'))
     const data = await response.json()
@@ -202,6 +222,9 @@ describe('analytics/route.ts', () => {
         { date: '2026-04-04', count: 1n, revenue: 300 }, // Cumartesi (6)
       ])
     mocks.db.customer.count.mockResolvedValueOnce(10)
+    mocks.aiAnalytics.analyzeCustomerBehavior.mockResolvedValueOnce({ insights: [] })
+    mocks.aiAnalytics.generateBookingPredictions.mockResolvedValueOnce({ predictions: [] })
+    mocks.aiAnalytics.segmentCustomers.mockResolvedValueOnce({ segments: [] })
 
     const response = await GET(new Request('http://localhost/api/analytics'))
     const data = await response.json()
@@ -223,6 +246,9 @@ describe('analytics/route.ts', () => {
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([]) // Empty daily bookings
     mocks.db.customer.count.mockResolvedValueOnce(5)
+    mocks.aiAnalytics.analyzeCustomerBehavior.mockResolvedValueOnce({ insights: [] })
+    mocks.aiAnalytics.generateBookingPredictions.mockResolvedValueOnce({ predictions: [] })
+    mocks.aiAnalytics.segmentCustomers.mockResolvedValueOnce({ segments: [] })
 
     const response = await GET(new Request('http://localhost/api/analytics'))
     const data = await response.json()
@@ -255,6 +281,9 @@ describe('analytics/route.ts', () => {
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
     mocks.db.customer.count.mockResolvedValueOnce(10)
+    mocks.aiAnalytics.analyzeCustomerBehavior.mockResolvedValueOnce({ insights: [] })
+    mocks.aiAnalytics.generateBookingPredictions.mockResolvedValueOnce({ predictions: [] })
+    mocks.aiAnalytics.segmentCustomers.mockResolvedValueOnce({ segments: [] })
 
     const response = await GET(new Request('http://localhost/api/analytics'))
     const data = await response.json()
@@ -277,6 +306,9 @@ describe('analytics/route.ts', () => {
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
     mocks.db.customer.count.mockResolvedValueOnce(5)
+    mocks.aiAnalytics.analyzeCustomerBehavior.mockResolvedValueOnce({ insights: [] })
+    mocks.aiAnalytics.generateBookingPredictions.mockResolvedValueOnce({ predictions: [] })
+    mocks.aiAnalytics.segmentCustomers.mockResolvedValueOnce({ segments: [] })
 
     const response = await GET(new Request('http://localhost/api/analytics'))
     const data = await response.json()
@@ -301,6 +333,9 @@ describe('analytics/route.ts', () => {
       ])
       .mockResolvedValueOnce([])
     mocks.db.customer.count.mockResolvedValueOnce(5)
+    mocks.aiAnalytics.analyzeCustomerBehavior.mockResolvedValueOnce({ insights: [] })
+    mocks.aiAnalytics.generateBookingPredictions.mockResolvedValueOnce({ predictions: [] })
+    mocks.aiAnalytics.segmentCustomers.mockResolvedValueOnce({ segments: [] })
 
     const response = await GET(new Request('http://localhost/api/analytics'))
     const data = await response.json()
