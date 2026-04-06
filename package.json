@@ -89,5 +89,12 @@
     "tsx": "^4.21.0",
     "typescript": "^5",
     "vitest": "^4.1.0"
+  },
+  "eslintConfig": {
+    "extends": ["next/core-web-vitals"],
+    "rules": {
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-require-imports": "off"
+    }
   }
 }
