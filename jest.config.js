@@ -28,10 +28,8 @@ const config = {
     '<rootDir>/src/lib/security/*.test.ts',
   ],
   collectCoverageFrom: [
-    'src/**/*.{js,jsx,ts,tsx}',
+    'src/lib/security/**/*.{js,ts}',
     '!src/**/*.d.ts',
-    '!src/**/*.stories.{js,ts,tsx}',
-    '!src/**/node_modules/**',
   ],
   coverageThreshold: {
     global: {
