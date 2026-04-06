@@ -68,7 +68,7 @@ export function useCustomer(id: string) {
 }
 
 interface CreateCustomerData {
-  name: string;
+  fullName: string;
   email?: string;
   phone: string;
   notes?: string;
@@ -96,7 +96,7 @@ export function useCreateCustomer() {
 }
 
 interface UpdateCustomerData {
-  name?: string;
+  fullName?: string;
   email?: string;
   phone?: string;
   notes?: string;

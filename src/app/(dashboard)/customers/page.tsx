@@ -34,7 +34,7 @@ export default function CustomersPage() {
     e.preventDefault()
     createMutation.mutate(
       {
-        name: formData.fullName,
+        fullName: formData.fullName,
         phone: formData.phone,
         email: formData.email || undefined,
         notes: formData.notes || undefined,
@@ -67,7 +67,7 @@ export default function CustomersPage() {
       {
         id: editingCustomer.id,
         data: {
-          name: editFormData.fullName,
+          fullName: editFormData.fullName,
           phone: editFormData.phone,
           email: editFormData.email || undefined,
           notes: editFormData.notes || undefined,
