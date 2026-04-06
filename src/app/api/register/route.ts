@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import bcrypt from 'bcryptjs'
 import { registerSchema } from '@/lib/validations'
+import { ZodError } from 'zod'
 
 export async function POST(req: Request) {
   try {
@@ -74,10 +75,10 @@ export async function POST(req: Request) {
       message: 'İşletme başarıyla oluşturuldu'
     })
   } catch (error: unknown) {
-    if (error instanceof Error && error.name === 'ZodError') {
-      const zodError = error as unknown as { errors: { message: string }[] }
+    if (error instanceof ZodError) {
+      const firstError = error.errors[0]
       return NextResponse.json(
-        { error: zodError.errors[0].message },
+        { error: firstError?.message || 'Geçersiz veri' },
         { status: 400 }
       )
     }

@@ -111,10 +111,16 @@ export function ThemeProvider({
   )
 }
 
+// Default theme values for SSR/initial render when context is not available
+const defaultThemeContext: ThemeContextType = {
+  theme: 'system',
+  setTheme: () => {},
+  resolvedTheme: 'light',
+  toggleTheme: () => {}
+}
+
 export function useTheme() {
   const context = useContext(ThemeContext)
-  if (context === undefined) {
-    throw new Error('useTheme must be used within a ThemeProvider')
-  }
-  return context
+  // Return default values during SSR instead of throwing
+  return context ?? defaultThemeContext
 }

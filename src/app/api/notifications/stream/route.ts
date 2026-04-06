@@ -88,9 +88,24 @@ export async function GET(req: NextRequest) {
         }
       }, 30000)
 
+      // Close connection gracefully before Vercel's 300s timeout (290s = ~4.8 minutes)
+      // Client will auto-reconnect
+      const connectionTimeout = setTimeout(() => {
+        try {
+          controller.enqueue(new TextEncoder().encode('event: close\ndata: Connection timeout, please reconnect\n\n'))
+          controller.close()
+        } catch {
+          // Connection already closed
+        }
+        clearInterval(heartbeat)
+        clearTimeout(connectionTimeout)
+        clients.delete(userId)
+      }, 290000)
+
       // Cleanup on close
       req.signal.addEventListener('abort', () => {
         clearInterval(heartbeat)
+        clearTimeout(connectionTimeout)
         clients.delete(userId)
       })
     },
